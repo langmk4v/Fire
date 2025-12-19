@@ -4,6 +4,7 @@
 
 #include "Node.hpp"
 #include "TypeInfo.hpp"
+#include "BuiltinFunc.hpp"
 
 //
 // スコープコンテキストを主軸として処理をまわす
@@ -78,6 +79,12 @@ namespace superman::sema {
     auto end() {
       return symbols.end();
     }
+    auto begin() const {
+      return symbols.begin();
+    }
+    auto end() const {
+      return symbols.begin();
+    }
 
     SymbolTable(SymbolTable* parent_tbl = nullptr) : parent_tbl(parent_tbl) {
     }
@@ -99,7 +106,7 @@ namespace superman::sema {
   struct ScopeContext {
     Node* node;
 
-    ScopeContext* parent;
+    ScopeContext* parent = nullptr;
 
     template <typename T>
     T* as() {
@@ -108,6 +115,10 @@ namespace superman::sema {
 
     bool is(NodeKind k) const {
       return node->kind == k;
+    }
+
+    virtual size_t find_symbol(std::vector<Symbol*>&, std::string const&) const {
+      return 0;
     }
 
   protected:
@@ -127,6 +138,13 @@ namespace superman::sema {
       return subscopes.emplace_back(us);
     }
 
+    size_t find_symbol(std::vector<Symbol*>& out, std::string const& name) const override {
+      for (auto&& v : variables)
+        if (v->name == name) out.push_back(v);
+
+      return out.size();
+    }
+
     UnnamedScope(NdScope* scope);
   };
 
@@ -143,6 +161,13 @@ namespace superman::sema {
     bool is_result_type_specified = false;
     bool is_result_type_deducted = false; // *両方が true になることはない
 
+    size_t find_symbol(std::vector<Symbol*>& out, std::string const& name) const override {
+      for (auto&& v : args)
+        if (v->name == name) out.push_back(v);
+
+      return out.size();
+    }
+
     FunctionScope(NdFunction* func);
   };
 
@@ -156,12 +181,44 @@ namespace superman::sema {
     SymbolTable enums;
     SymbolTable classes;
 
+    size_t find_symbol(std::vector<Symbol*>& out, std::string const& name) const override {
+      for (auto&& v : variables)
+        if (v->name == name) out.push_back(v);
+
+      for (auto&& v : functions)
+        if (v->name == name) out.push_back(v);
+
+      for (auto&& v : enums)
+        if (v->name == name) out.push_back(v);
+
+      for (auto&& v : classes)
+        if (v->name == name) out.push_back(v);
+
+      return out.size();
+    }
+
+    size_t find_variable(std::vector<Symbol*>& out, std::string const& name) const {
+      for (auto&& v : variables)
+        if (v->name == name) out.push_back(v);
+
+      return out.size();
+    }
+
+    size_t find_function(std::vector<Symbol*>& out, std::string const& name) const {
+      for (auto&& v : functions)
+        if (v->name == name) out.push_back(v);
+
+      return out.size();
+    }
+
     ModuleScope(NdModule* mod);
   };
 
   struct SymbolFindResult {
 
     std::vector<Symbol*> matches;
+
+    std::vector<builtins::Function const*> blt_funcs;
 
     auto begin() {
       return matches.begin();
@@ -185,6 +242,27 @@ namespace superman::sema {
     void remove(size_t at) {
       matches.erase(begin() + at);
     }
+
+    inline void remove(std::vector<Symbol*>::iterator it) {
+      matches.erase(it);
+    }
+
+    //
+    // 絞り込み
+    void narrow_down(std::vector<SymbolKind>&& kv) {
+      for (auto it = begin(); it != end();) {
+        for (auto& k : kv)
+          if ((*it)->kind == k) {
+            it++;
+            goto __ok;
+          }
+
+        remove(it);
+        continue;
+
+      __ok:;
+      }
+    }
   };
 
   //
@@ -198,6 +276,8 @@ namespace superman::sema {
     // 式中に含まれる要素の型に依存してる場合は true
     bool is_type_dependent = false;
     std::vector<Node*> depends;
+
+    builtins::Function const* builtin_func;
 
     bool fail() const {
       return !is_succeed;
@@ -224,6 +304,8 @@ namespace superman::sema {
     void check_module(ModuleScope* mod);
     void check_function(FunctionScope* func);
     void check_scope(UnnamedScope* scope);
+
+    void check_let(NdLet* let);
 
     ExprTypeResult eval_expr(Node* node);
 

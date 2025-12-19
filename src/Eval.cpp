@@ -3,11 +3,6 @@
 
 namespace superman {
 
-  builtins::Function const* all_builtin_funcs[] = {
-      &builtins::fn_print,
-      &builtins::fn_println,
-  };
-
   Evaluator::CallStack& Evaluator::push_stack() {
     return *call_stack.emplace_back(new CallStack);
   }
@@ -51,6 +46,8 @@ namespace superman {
 
     case NodeKind::CallFunc: {
       auto cf = node->as<NdCallFunc>();
+
+      (void)cf;
 
       todoimpl;
     }

@@ -5,6 +5,10 @@
 
 namespace superman {
 
+  namespace builtins {
+    struct Function;
+  }
+
   namespace sema {
     struct ScopeContext;
     struct VariableInfo;
@@ -132,7 +136,8 @@ namespace superman {
     std::vector<NdSymbol*> te_args; // template-arguments
     NdSymbol* next = nullptr;       // scope-resolution
 
-    Node* sym_target = nullptr; // <-- sema
+    Node* sym_target = nullptr;
+    builtins::Function const* sym_target_bltin = nullptr;
 
     bool is_ref = false;            //
     bool is_const = false;          //

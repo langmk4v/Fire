@@ -124,13 +124,69 @@ namespace superman::sema {
 
       auto result = find_symbol(sym);
 
-      todoimpl;
+      if (result.empty() && result.blt_funcs.empty()) throw err::use_of_undefined_symbol(sym->name);
+
+      if (result.count() + result.blt_funcs.size() >= 2) {
+        throw err::ambiguous_symbol_name(sym->name);
+      }
+
+      if (result.count()) {
+        todoimpl;
+      }
+
+      sym->sym_target_bltin = result.blt_funcs[0];
+
+      auto ti = TypeInfo(TypeKind::Function, sym->sym_target_bltin->arg_types, false, false);
+
+      ti.parameters.insert(ti.parameters.begin(), sym->sym_target_bltin->result_type);
+
+      auto res = ExprTypeResult(ti);
+      res.builtin_func = sym->sym_target_bltin;
+
+      return res;
     }
 
     case NodeKind::CallFunc: {
       auto cf = node->as<NdCallFunc>();
 
-      auto f_name = eval_expr(cf->callee);
+      auto callee = eval_expr(cf->callee);
+
+      if (callee.fail()) {
+        todoimpl;
+      }
+
+      if (callee.type.kind != TypeKind::Function) {
+        throw err::not_callable_type(cf->callee->token, callee.type.to_string());
+      }
+
+      bool is_blt = callee.builtin_func != nullptr;
+
+      auto calls = (int)cf->args.size();
+      auto takes = (int)callee.type.parameters.size() - 1;
+
+      if (calls != takes) {
+        bool is_var_arg = is_blt && callee.builtin_func->is_variable_args;
+
+        if (!is_var_arg) {
+          // todo: get isvararg flag of user-def func
+        }
+
+        if (is_var_arg ? (calls < takes - 1) : (calls < takes)) {
+          todoimpl; // too few
+        } else if (!is_var_arg && calls > takes) {
+          todoimpl; // too many
+        }
+      }
+
+      for (int i = 0; i < std::min(calls, takes); i++) {
+        auto argtype = eval_expr(cf->args[i]).type;
+
+        if (!argtype.equals(is_blt ? callee.builtin_func->arg_types[i] : TypeInfo(/*todo*/))) {
+          todoimpl;
+        }
+      }
+
+      if (is_blt) return callee.builtin_func->result_type;
 
       todoimpl;
     }
@@ -200,6 +256,26 @@ namespace superman::sema {
 
     (void)node;
 
+    // find first symbol ( A of A::B::... )
+    for (auto scope = cur_scope; scope; scope = scope->parent) {
+      if (scope->find_symbol(r.matches, node->name.text) >= 1) {
+        break;
+      }
+    }
+
+    if (r.empty()) {
+      // find in builtin functions
+      for (auto&& bf : builtins::Function::all_builtin_funcs)
+        if (bf->name == node->name.text) r.blt_funcs.push_back(bf);
+
+      if (r.blt_funcs.empty()) return r;
+    }
+
+    // loop for scope resolutions
+    for (node = node->next; node; node = node->next) {
+      todoimpl;
+    }
+
     return r;
   }
 
@@ -242,36 +318,7 @@ namespace superman::sema {
     for (auto item : node->items) {
       switch (item->kind) {
       case NodeKind::Let: {
-
-        auto let = item->as<NdLet>();
-
-        auto& varinfo = *let->var_info_ptr;
-
-        if (let->type) {
-          // シャドウイングの実装のため、
-          // is_type_deducted の確認はしない（常に上書き）
-          varinfo.type = eval_typename(let->type).type;
-          varinfo.is_type_deducted = true;
-        }
-
-        if (let->init) {
-          auto result = eval_expr(let->init);
-
-          if (result.is_succeed) {
-            if (varinfo.is_type_deducted) {
-              if (!varinfo.type.equals(result.type)) {
-                throw err::mismatched_types(let->init->token, varinfo.type.to_string(),
-                                            result.type.to_string());
-              }
-            } else {
-              varinfo.is_type_deducted = true;
-              varinfo.type = result.type;
-            }
-          } else {
-            todoimpl;
-          }
-        }
-
+        check_let(item->as<NdLet>());
         break;
       }
 
@@ -326,6 +373,11 @@ namespace superman::sema {
         check_scope(stmt->scope_ptr->as<UnnamedScope>());
         break;
 
+      case NodeKind::Let: {
+        check_let(stmt->as<NdLet>());
+        break;
+      }
+
       case NodeKind::Return: {
         auto ret = stmt->as<NdReturn>();
 
@@ -371,6 +423,43 @@ namespace superman::sema {
     }
 
     cur_scope = _save;
+  }
+
+  //
+  // check_let
+  //
+  void Sema::check_let(NdLet* let) {
+    debug(assert(let->var_info_ptr));
+
+    auto& varinfo = *let->var_info_ptr;
+
+    // 型指定あり
+    if (let->type) {
+      varinfo.type = eval_typename(let->type).type;
+      varinfo.is_type_deducted = true;
+    }
+
+    // 初期化式あり
+    if (let->init) {
+      auto result = eval_expr(let->init);
+
+      if (result.is_succeed) {
+        // 型が既にわかっている場合
+        if (varinfo.is_type_deducted) {
+          // => それと一致しなければエラー
+          if (!varinfo.type.equals(result.type)) {
+            throw err::mismatched_types(let->init->token, varinfo.type.to_string(),
+                                        result.type.to_string());
+          }
+        }
+        // 型がまだ不明
+        else {
+          // => ここで決定
+          varinfo.is_type_deducted = true;
+          varinfo.type = result.type;
+        }
+      }
+    }
   }
 
   Sema::Sema(NdModule* mod) {

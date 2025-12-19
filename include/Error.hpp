@@ -15,7 +15,6 @@ namespace superman {
   };
 
   namespace err {
-
     struct e {
       SourceCode& s;
       size_t pos;
@@ -43,6 +42,18 @@ namespace superman {
       }
     };
 
+    struct use_of_undefined_symbol : e {
+      use_of_undefined_symbol(Token const& t)
+          : e(t, "'" + t.text + "' is not found in this scope.") {
+      }
+    };
+
+    struct not_callable_type : e {
+      not_callable_type(Token const& t, std::string const& ti)
+          : e(t, "'" + ti + "' type object is not callable") {
+      }
+    };
+
     struct expected_but_found : e {
       expected_but_found(Token const& t, char const* expected)
           : e(t, "expected '"s + expected + "'") {
@@ -65,7 +76,7 @@ namespace superman {
     };
 
     struct ambiguous_symbol_name : e {
-      ambiguous_symbol_name(Token const& t) : e(t, "ambiguous_symbol_name") {
+      ambiguous_symbol_name(Token const& t) : e(t, "'" + t.text + "' is ambigous") {
       }
     };
 

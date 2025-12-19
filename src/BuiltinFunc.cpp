@@ -37,7 +37,7 @@ namespace superman::builtins {
     return new ObjInt(len);
   }
 
-  Function const fn_print = Function("print", {}, true, impl_print);
-  Function const fn_println = Function("println", {}, true, impl_println);
+  Function const fn_print = Function("print", {}, TypeKind::Int, true, impl_print);
+  Function const fn_println = Function("println", {}, TypeKind::Int, true, impl_println);
 
 } // namespace superman::builtins
