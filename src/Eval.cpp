@@ -1,6 +1,12 @@
 #include "Eval.hpp"
+#include "BuiltinFunc.hpp"
 
 namespace superman {
+
+  builtins::Function const* all_builtin_funcs[] = {
+      &builtins::fn_print,
+      &builtins::fn_println,
+  };
 
   Evaluator::CallStack& Evaluator::push_stack() {
     return *call_stack.emplace_back(new CallStack);
@@ -11,7 +17,7 @@ namespace superman {
     call_stack.pop_back();
   }
 
-  Object* Evaluator::eval_node(Node* node) {
+  void Evaluator::eval_stmt(Node* node) {
     switch (node->kind) {
 
     case NodeKind::Module:
@@ -20,8 +26,37 @@ namespace superman {
     case NodeKind::Enum:
       break;
 
+    case NodeKind::Scope: {
+      auto scope = node->as<NdScope>();
+
+      for (auto s : scope->items) {
+        eval_stmt(s);
+      }
+
+      break;
+    }
+
+    default:
+      eval_expr(node);
+    }
+  }
+
+  Object* Evaluator::eval_expr(Node* node) {
+
+    assert(node != nullptr);
+
+    switch (node->kind) {
     case NodeKind::Value:
       return node->as<NdValue>()->obj;
+
+    case NodeKind::CallFunc: {
+      auto cf = node->as<NdCallFunc>();
+
+      todoimpl;
+    }
+
+    default:
+      todoimpl;
     }
 
     return Object::none;

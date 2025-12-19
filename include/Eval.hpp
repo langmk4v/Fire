@@ -17,9 +17,12 @@ namespace superman {
     std::vector<CallStack*> call_stack;
 
   public:
-    Evaluator() {}
+    Evaluator() {
+    }
 
-    Object* eval_node(Node* node);
+    void eval_stmt(Node* node);
+
+    Object* eval_expr(Node* node);
 
     CallStack& push_stack();
 

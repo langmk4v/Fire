@@ -99,20 +99,24 @@ namespace superman {
         // for (auto&&t:tokens)std::cout<<t.text<<' ';std::cout<<std::endl;
 
         auto parser = Parser(lexer, tokens);
-        auto node = parser.parse();
 
-        node->name = "__main__";
+        auto mod = parser.parse();
+
+        mod->name = "__main__";
+
+        if (!mod->main_fn) {
+          printf("fatal error: function 'main' not defined.\n");
+          return -1;
+        }
 
         // std::cout << node2s(node) << std::endl;
 
-        auto se = sema::Sema(node);
+        auto se = sema::Sema(mod);
         se.analyze_full();
 
         auto ev = Evaluator();
 
-        // auto obj = ev.eval_node(node);
-        for (auto&& x : node->items)
-          ev.eval_node(x);
+        ev.eval_stmt(mod->main_fn->body);
 
         return 0;
       } catch (int n) {

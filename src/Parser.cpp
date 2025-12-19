@@ -443,12 +443,25 @@ namespace superman {
 
   NdModule* Parser::ps_mod() {
     NdModule* mod = new NdModule(*cur);
+
     while (!is_end()) {
-      if (eat("import")) {
+      if (look("import")) {
         todoimpl;
       }
-      mod->items.push_back(ps_mod_item());
+
+      auto item = mod->items.emplace_back(ps_mod_item());
+
+      if (item->is(NodeKind::Function)) {
+        if (auto f = item->as<NdFunction>(); f->name.text == "main") {
+          if (mod->main_fn) {
+            throw err::duplicate_of_definition(f->name, mod->main_fn->name);
+          } else {
+            mod->main_fn = f;
+          }
+        }
+      }
     }
+
     return mod;
   }
 

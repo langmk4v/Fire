@@ -7,8 +7,19 @@
 #include "Error.hpp"
 #include "Sema.hpp"
 
+/*
+ * ＠自分へ
+ *  ソースコードみてわけわかんないときはコンサータ飲んでください。
+ *  また途中放棄とかはしないでください。
+ *  宜しくお願いします。
+ */
+
 namespace superman::sema {
 
+  //
+  // new_var_symbol
+  //  ローカル変数またはグローバル変数用のシンボル情報を作成
+  //
   Symbol* Symbol::new_var_symbol(NdLet* let) {
     auto s = new Symbol(SymbolKind::Var, let->name.text, let);
 
@@ -20,6 +31,10 @@ namespace superman::sema {
     return s;
   }
 
+  //
+  // new_arg_symbol
+  //  関数の引数用のシンボル情報を作成
+  //
   Symbol* Symbol::new_arg_symbol(NdFunction::Argument* arg) {
     auto s = new Symbol(SymbolKind::Var, arg->name.text, arg);
 
@@ -103,6 +118,22 @@ namespace superman::sema {
     switch (node->kind) {
     case NodeKind::Value:
       return node->as<NdValue>()->obj->type;
+
+    case NodeKind::Symbol: {
+      auto sym = node->as<NdSymbol>();
+
+      auto result = find_symbol(sym);
+
+      todoimpl;
+    }
+
+    case NodeKind::CallFunc: {
+      auto cf = node->as<NdCallFunc>();
+
+      auto f_name = eval_expr(cf->callee);
+
+      todoimpl;
+    }
     }
 
     todoimpl;
@@ -137,7 +168,7 @@ namespace superman::sema {
     {
       auto found = find_symbol(node);
 
-      if (found.nothing()) throw err::unknown_type_name(node->name);
+      if (found.empty()) throw err::unknown_type_name(node->name);
 
       for (size_t i = 0; i < found.count();) {
         if (!found[i]->is_type_name()) {
@@ -332,6 +363,10 @@ namespace superman::sema {
 
         break;
       }
+
+      default:
+        eval_expr(stmt);
+        break;
       }
     }
 

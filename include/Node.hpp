@@ -15,6 +15,7 @@ namespace superman {
 
   enum class NodeKind {
     Value,
+
     Symbol,
 
     Array,
@@ -116,14 +117,17 @@ namespace superman {
   };
 
   struct NdSymbol : Node {
-    enum Types {
+    enum NameTypes {
       Unknown,
       Var,
       Func,
-      Type,
+      Enum,
+      Enumerator,
+      Class,
+      Module,
     };
 
-    Types type = Unknown;
+    NameTypes type = Unknown;
     Token& name;
     std::vector<NdSymbol*> te_args; // template-arguments
     NdSymbol* next = nullptr;       // scope-resolution
@@ -274,6 +278,9 @@ namespace superman {
   struct NdModule : Node {
     std::string name;
     std::vector<Node*> items;
+
+    NdFunction* main_fn = nullptr;
+
     NdModule(Token& tok) : Node(NodeKind::Module, tok) {
     }
   };

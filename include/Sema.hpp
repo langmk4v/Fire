@@ -161,28 +161,35 @@ namespace superman::sema {
 
   struct SymbolFindResult {
 
-    std::vector<Symbol*> v;
+    std::vector<Symbol*> matches;
 
-    bool nothing() const {
-      return v.empty();
+    auto begin() {
+      return matches.begin();
+    }
+    auto end() {
+      return matches.end();
+    }
+
+    bool empty() const {
+      return matches.empty();
     }
 
     auto count() {
-      return v.size();
+      return matches.size();
     }
 
     Symbol* operator[](size_t i) {
-      return v[i];
+      return matches[i];
     }
 
     void remove(size_t at) {
-      v.erase(v.begin() + at);
+      matches.erase(begin() + at);
     }
   };
 
   //
   // ExprTypeResult
-  // 式の型を評価した結果を表す構造体
+  // 式の型を評価して、その型と他の情報を表す構造体
   struct ExprTypeResult {
     TypeInfo type;
 
@@ -219,6 +226,7 @@ namespace superman::sema {
     void check_scope(UnnamedScope* scope);
 
     ExprTypeResult eval_expr(Node* node);
+
     ExprTypeResult eval_typename(NdSymbol* node);
 
   private:

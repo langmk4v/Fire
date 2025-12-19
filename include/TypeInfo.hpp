@@ -28,8 +28,8 @@ namespace superman {
     TypeInfo(TypeKind k = TypeKind::None) : kind(k) {
     }
 
-    TypeInfo(TypeKind k, std::vector<TypeInfo> v, bool ir, bool ic)
-        : kind(k), parameters(std::move(v)), is_ref(ir), is_const(ic) {
+    TypeInfo(TypeKind k, std::vector<TypeInfo> v, bool isRef, bool isConst)
+        : kind(k), parameters(std::move(v)), is_ref(isRef), is_const(isConst) {
     }
 
     bool equals(TypeInfo const& t, bool cmp_ref = true, bool cmp_const = true) const;
