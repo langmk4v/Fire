@@ -37,7 +37,9 @@ namespace superman {
     return sym;
   }
 
-  NdSymbol* Parser::ps_type_name() { return ps_symbol(true); }
+  NdSymbol* Parser::ps_type_name() {
+    return ps_symbol(true);
+  }
 
   Node* Parser::ps_factor() {
     auto& tok = *cur;
@@ -287,7 +289,9 @@ namespace superman {
     return x;
   }
 
-  Node* Parser::ps_expr() { return ps_assign(); }
+  Node* Parser::ps_expr() {
+    return ps_assign();
+  }
 
   NdLet* Parser::ps_let(bool from_var_kwd) {
     auto& tok = *expect(from_var_kwd ? "var" : "let");
@@ -424,10 +428,17 @@ namespace superman {
     return node;
   }
 
+  NdEnum* Parser::ps_enum() {
+    todoimpl;
+  }
+
   Node* Parser::ps_mod_item() {
+    if (look("let")) return ps_let();
     if (look("fn")) return ps_function();
     if (look("class")) return ps_class();
-    return ps_stmt();
+    if (look("enum")) return ps_enum();
+
+    throw err::expected_item_of_module(*cur);
   }
 
   NdModule* Parser::ps_mod() {
@@ -441,6 +452,8 @@ namespace superman {
     return mod;
   }
 
-  NdModule* Parser::parse() { return ps_mod(); }
+  NdModule* Parser::parse() {
+    return ps_mod();
+  }
 
 } // namespace superman

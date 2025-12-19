@@ -253,6 +253,11 @@ namespace superman {
     }
   };
 
+  struct NdEnum : Node {
+    NdEnum(Token& t) : Node(NodeKind::Enum, t) {
+    }
+  };
+
   struct NdClass : NdTemplatableBase {
     Token& name;
     NdSymbol* base_class = nullptr;

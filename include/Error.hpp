@@ -101,7 +101,18 @@ namespace superman {
       std::string found;
 
       mismatched_types(Token const& tok, std::string const& expected, std::string const& found)
-          : e(tok, "expected '" + expected + "' type, but found '" + found + "'") {
+          : e(tok, "expected '" + expected + "' type expression, but found '" + found + "'") {
+      }
+    };
+
+    struct expected_item_of_module : e {
+      expected_item_of_module(Token const& t)
+          : e(t, "expected definition of function or class or enum after this token.") {
+      }
+    };
+
+    struct mismatched_return_statement : e {
+      mismatched_return_statement(Token const& t) : e(t, "mismatched return statement") {
       }
     };
 

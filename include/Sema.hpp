@@ -99,13 +99,19 @@ namespace superman::sema {
   struct ScopeContext {
     Node* node;
 
+    ScopeContext* parent;
+
     template <typename T>
     T* as() {
       return (T*)this;
     }
 
+    bool is(NodeKind k) const {
+      return node->kind == k;
+    }
+
   protected:
-    ScopeContext(Node* node) : node(node) {
+    ScopeContext(Node* node, ScopeContext* parent = nullptr) : node(node), parent(parent) {
     }
   };
 
@@ -117,6 +123,7 @@ namespace superman::sema {
     std::vector<UnnamedScope*> subscopes;
 
     UnnamedScope* add_scope(UnnamedScope* us) {
+      us->parent = this;
       return subscopes.emplace_back(us);
     }
 
@@ -127,7 +134,14 @@ namespace superman::sema {
   // 関数スコープ
   struct FunctionScope : ScopeContext {
     SymbolTable args;
+    TypeInfo result_type;
     UnnamedScope* body = nullptr;
+
+    // 戻り値の型の管理フラグ
+    // ・プログラムにて明示的に指定されている場合は specified = true
+    // ・そうでない場合に return 文から推論できた場合は deducted = true
+    bool is_result_type_specified = false;
+    bool is_result_type_deducted = false; // *両方が true になることはない
 
     FunctionScope(NdFunction* func);
   };
@@ -205,11 +219,18 @@ namespace superman::sema {
     void check_scope(UnnamedScope* scope);
 
     ExprTypeResult eval_expr(Node* node);
-
     ExprTypeResult eval_typename(NdSymbol* node);
 
+  private:
     SymbolFindResult find_symbol(NdSymbol* node);
 
     static int get_required_template_params_count(Symbol* s);
+
+    FunctionScope* get_cur_func_scope() {
+      for (auto s = cur_scope; s; s = s->parent)
+        if (s->is(NodeKind::Function)) return s->as<FunctionScope>();
+
+      return nullptr;
+    }
   };
 } // namespace superman::sema

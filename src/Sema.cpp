@@ -41,7 +41,8 @@ namespace superman::sema {
       }
 
       if (item->is(NodeKind::Scope)) {
-        add_scope(new UnnamedScope(item->as<NdScope>()));
+        auto sub = add_scope(new UnnamedScope(item->as<NdScope>()));
+        sub->parent = this;
         continue;
       }
     }
@@ -55,6 +56,7 @@ namespace superman::sema {
     }
 
     body = new UnnamedScope(func->body);
+    body->parent = this;
   }
 
   ModuleScope::ModuleScope(NdModule* mod) : ScopeContext(mod) {
@@ -64,22 +66,32 @@ namespace superman::sema {
     for (auto item : mod->items) {
       switch (item->kind) {
       case NodeKind::Let: {
-        alert;
         variables.append(Symbol::new_var_symbol(item->as<NdLet>()));
         break;
       }
 
       case NodeKind::Function: {
-        alert;
         auto func = item->as<NdFunction>();
-        auto fsym = functions.append(new Symbol(SymbolKind::Func, func->name.text, func));
 
         auto ctx = new FunctionScope(func);
+        ctx->parent = this;
 
+        auto fsym = functions.append(new Symbol(SymbolKind::Func, func->name.text, func));
         fsym->scope_ctx = ctx;
 
         break;
       }
+
+      case NodeKind::Enum: {
+        todoimpl;
+      }
+
+      case NodeKind::Class: {
+        todoimpl;
+      }
+
+      default:
+        todoimpl;
       }
     }
   }
@@ -193,6 +205,9 @@ namespace superman::sema {
 
     auto node = mod->node->as<NdModule>();
 
+    auto _save = cur_scope;
+    cur_scope = mod;
+
     for (auto item : node->items) {
       switch (item->kind) {
       case NodeKind::Let: {
@@ -235,15 +250,16 @@ namespace superman::sema {
       }
       }
     }
+
+    cur_scope = _save;
   }
 
   void Sema::check_function(FunctionScope* func) {
-    (void)func;
-
-    alert;
+    auto node = func->node->as<NdFunction>();
 
     std::unordered_map<std::string, Token*> arg_dup_check;
 
+    // check argument name duplications
     for (auto& arg : func->args) {
       if (auto it = arg_dup_check.find(arg->name); it != arg_dup_check.end()) {
         throw err::duplicate_of_definition(arg->var_info->def_arg->name, *it->second);
@@ -251,14 +267,79 @@ namespace superman::sema {
         arg_dup_check[arg->name] = &arg->var_info->def_arg->name;
       }
     }
+
+    // get function result type
+    if (node->result_type) {
+      func->result_type = eval_typename(node->result_type).type;
+      func->is_result_type_specified = true;
+    }
+
+    auto _save = cur_scope;
+    cur_scope = func;
+
+    // check body scope
+    check_scope(func->body);
+
+    cur_scope = _save;
   }
 
   void Sema::check_scope(UnnamedScope* scope) {
+    auto node = scope->node->as<NdScope>();
+
+    auto _save = cur_scope;
+    cur_scope = scope;
+
+    for (auto stmt : node->items) {
+      switch (stmt->kind) {
+      case NodeKind::Scope:
+        check_scope(stmt->scope_ptr->as<UnnamedScope>());
+        break;
+
+      case NodeKind::Return: {
+        auto ret = stmt->as<NdReturn>();
+
+        auto fs = get_cur_func_scope();
+        assert(fs);
+
+        // 戻り値なし ( "return" 単体 )
+        if (!ret->expr) {
+          // => 関数定義側で指定されている場合はエラー
+          //    ( return 文に式が必要 )
+          if (fs->is_result_type_specified) {
+            err::mismatched_return_statement(ret->token).print();
+            warns::show_note(fs->node->as<NdFunction>()->result_type->token,
+                             "function result type was specified here, so return-statement must "
+                             "have an expression.")();
+          }
+        }
+        // 戻り値あり
+        else {
+          // => 定義側で指定されていない場合はエラー
+          if (!fs->is_result_type_specified) {
+            err::mismatched_return_statement(ret->token).print();
+            warns::show_note(
+                fs->node->as<NdFunction>()->token,
+                "function result type is not specified, but return-statement has an expression.")();
+          }
+
+          // => 指定ありで型が一致しない場合はエラー
+          if (auto ex = eval_expr(ret->expr).type; !fs->result_type.equals(ex)) {
+            err::mismatched_types(ret->expr->token, fs->result_type.to_string(), ex.to_string())
+                .print();
+            warns::show_note(fs->node->as<NdFunction>()->result_type->token, "specified here")();
+          }
+        }
+
+        break;
+      }
+      }
+    }
+
+    cur_scope = _save;
   }
 
   Sema::Sema(NdModule* mod) {
     root_scope = new ModuleScope(mod);
-    cur_scope = root_scope;
   }
 
 } // namespace superman::sema

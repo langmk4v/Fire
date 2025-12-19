@@ -64,6 +64,8 @@ namespace superman {
 
     NdClass* ps_class();
 
+    NdEnum* ps_enum();
+
     Node* ps_mod_item();
 
     NdModule* ps_mod();
@@ -72,9 +74,15 @@ namespace superman {
 
   private:
     using TK = TokenKind;
-    bool is_end() { return cur->is(TK::Eof); }
-    bool eat(char const* s) { return cur->text == s ? (cur++, true) : false; }
-    bool look(char const* s) { return cur->text == s; }
+    bool is_end() {
+      return cur->is(TK::Eof);
+    }
+    bool eat(char const* s) {
+      return cur->text == s ? (cur++, true) : false;
+    }
+    bool look(char const* s) {
+      return cur->text == s;
+    }
     Token* expect(char const* s) {
       if (cur->text != s) throw err::expected_but_found(*cur, s);
       return cur++;
