@@ -129,17 +129,23 @@ namespace superman::sema {
   }
 
   void Sema::check_function(FunctionScope* func) {
-    auto node = func->node->as<NdFunction>();
+    NdFunction* node = func->node->as<NdFunction>();
 
     std::unordered_map<std::string, Token*> arg_dup_check;
 
     // check argument name duplications
-    for (auto& arg : func->args) {
+    for (Symbol* arg : func->args) {
       if (auto it = arg_dup_check.find(arg->name); it != arg_dup_check.end()) {
         throw err::duplicate_of_definition(arg->var_info->def_arg->name, *it->second);
       } else {
         arg_dup_check[arg->name] = &arg->var_info->def_arg->name;
       }
+    }
+
+    // check argument types
+    for (Symbol* arg : func->args) {
+      arg->var_info->type = eval_typename(arg->var_info->def_arg->type).type;
+      arg->var_info->is_type_deducted = true;
     }
 
     // get function result type

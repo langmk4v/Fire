@@ -117,20 +117,17 @@ namespace superman::sema {
           // todo: get isvararg flag of user-def func
         }
 
-        if (is_var_arg ? (calls < takes - 1) : (calls < takes)) {
+        if (is_var_arg ? (calls < takes - 1) : (calls < takes))
           throw err::too_few_arguments(cf->callee->token);
-        } else if (!is_var_arg && calls > takes) {
+        else if (!is_var_arg && calls > takes)
           throw err::too_many_arguments(cf->callee->token);
-        }
       }
 
       for (int i = 0; i < std::min(calls, takes); i++) {
         auto argtype = eval_expr(cf->args[i]).type;
 
-        // if (!argtype.equals(is_blt ? callee.builtin_func->arg_types[i] : TypeInfo(/*todo*/))) {
-        if (!argtype.equals(callee.type.parameters[i + 1])) {
-          todoimpl;
-        }
+        if (!argtype.equals(callee.type.parameters[i + 1]))
+          throw err::mismatched_types(cf->args[i]->token, callee.type.parameters[i + 1].to_string(), argtype.to_string());
       }
 
       for (int i = takes; i < calls; i++) {

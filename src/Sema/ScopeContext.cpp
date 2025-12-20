@@ -39,7 +39,7 @@ namespace superman::sema {
     func->scope_ptr = this;
 
     for (auto& arg : func->args) {
-      args.append(Symbol::new_arg_symbol(&arg))->var_info->is_type_deducted = true;
+      args.append(Symbol::new_arg_symbol(&arg));
     }
 
     body = new UnnamedScope(func->body, func->args.size(), this);
