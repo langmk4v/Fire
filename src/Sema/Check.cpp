@@ -209,8 +209,7 @@ namespace superman::sema {
 
           // => 指定ありで型が一致しない場合はエラー
           if (auto ex = eval_expr(ret->expr).type; !fs->result_type.equals(ex)) {
-            err::mismatched_types(ret->expr->token, fs->result_type.to_string(), ex.to_string())
-                .print();
+            err::mismatched_types(ret->expr->token, fs->result_type.to_string(), ex.to_string()).print();
             warns::show_note(fs->node->as<NdFunction>()->result_type->token, "specified here")();
           }
         }

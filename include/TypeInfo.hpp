@@ -25,12 +25,14 @@ namespace superman {
     bool is_ref = false;
     bool is_const = false;
 
-    TypeInfo(TypeKind k = TypeKind::None) : kind(k) {
-    }
+    TypeInfo(TypeKind k = TypeKind::None) : kind(k) { }
 
     TypeInfo(TypeKind k, std::vector<TypeInfo> v, bool isRef, bool isConst)
-        : kind(k), parameters(std::move(v)), is_ref(isRef), is_const(isConst) {
-    }
+        : kind(k), parameters(std::move(v)), is_ref(isRef), is_const(isConst) {}
+
+    bool is(TypeKind k)const{return kind==k;}
+
+    bool is_numeric()const{return is(TypeKind::Int)||is(TypeKind::Float);}
 
     bool equals(TypeInfo const& t, bool cmp_ref = true, bool cmp_const = true) const;
 

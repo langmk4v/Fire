@@ -157,31 +157,31 @@ namespace superman::sema {
     switch (ex->kind) {
       case NodeKind::Add:
         if (left.is(TypeKind::String) && right.is(TypeKind::String))
-          return TypeKind::String;
-
+          return TypeInfo(TypeKind::String);
         break;
 
-      case NodeKind::Sub:
-        break;
-      
       case NodeKind::Mul:
         if ((left.is(TypeKind::Int) && right.is(TypeKind::String)) || (left.is(TypeKind::String) && right.is(TypeKind::Int)))
-          return TypeKind::String;
-
-        break;
-
-      case NodeKind::Div:
+          return TypeInfo(TypeKind::String);
         break;
 
       case NodeKind::Mod:
-        if (left.is(TypeKind::Float) || right.is(TypeKind::Float))
-          goto error_calc;
+      case NodeKind::LShift:
+      case NodeKind::RShift:
+        if (left.is(TypeKind::Float) || right.is(TypeKind::Float)) goto error_calc;
+        break;
 
+      case NodeKind::Sub:
+      case NodeKind::Div:
+        break;
+
+      case NodeKind::Equal:
+        if (!left.equals(right)) goto error_calc;
         break;
     }
 
     if (left.is_numeric() && right.is_numeric()) {
-      return left.is(TypeKind::Float) || right.is(TypeKind::Float) ? TypeKind::Float : TypeKind::Int;
+      return TypeInfo(left.is(TypeKind::Float) || right.is(TypeKind::Float) ? TypeKind::Float : TypeKind::Int);
     }
 
   error_calc:
@@ -193,10 +193,10 @@ namespace superman::sema {
   //
   ExprTypeResult Sema::eval_typename(NdSymbol* node) {
     static constexpr std::pair<char const*, TypeKind> name_kind_pairs[]{
-        {"none", TypeKind::None},         {"int", TypeKind::Int},     {"float", TypeKind::Float},
-        {"bool", TypeKind::Bool},         {"char", TypeKind::Char},   {"string", TypeKind::String},
-        {"vector", TypeKind::Vector},     {"tuple", TypeKind::Tuple}, {"dict", TypeKind::Dict},
-        {"function", TypeKind::Function},
+      {"none", TypeKind::None},         {"int", TypeKind::Int},     {"float", TypeKind::Float},
+      {"bool", TypeKind::Bool},         {"char", TypeKind::Char},   {"string", TypeKind::String},
+      {"vector", TypeKind::Vector},     {"tuple", TypeKind::Tuple}, {"dict", TypeKind::Dict},
+      {"function", TypeKind::Function},
     };
 
     auto result = ExprTypeResult();
