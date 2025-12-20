@@ -42,7 +42,7 @@ namespace superman::sema {
       args.append(Symbol::new_arg_symbol(&arg));
     }
 
-    body = new UnnamedScope(func->body, 0, this);
+    body = new UnnamedScope(func->body, func->args.size(), this);
 
     body->parent = this;
   }

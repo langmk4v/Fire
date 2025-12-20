@@ -13,6 +13,8 @@ namespace superman {
     struct CallStack {
       std::vector<Object*> variables;
 
+      Object* result = nullptr; // <-- return-statement
+
       CallStack(int vn);
       ~CallStack();
     };

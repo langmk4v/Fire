@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "macro.h"
 #include "Error.hpp"
 #include "Sema.hpp"
@@ -41,6 +43,27 @@ namespace superman::sema {
           return S->var_info->type;
         }
 
+        case SymbolKind::Func: {
+          sym->type = NdSymbol::Func;
+
+          auto f = S->node->as<NdFunction>();
+
+          assert(f->is(NodeKind::Function));
+
+          auto ti = TypeInfo(TypeKind::Function,
+                             {f->result_type ? eval_typename(f->result_type).type : TypeKind::None},
+                             false, false);
+
+          for (auto&& arg : f->args)
+            ti.parameters.emplace_back(eval_typename(arg.type).type);
+
+          auto res = ExprTypeResult(ti);
+
+          res.func_nd = f;
+
+          return res;
+        }
+
         default:
           todoimpl;
         }
@@ -74,7 +97,10 @@ namespace superman::sema {
 
       bool is_blt = callee.builtin_func != nullptr;
 
-      cf->blt_fn = callee.builtin_func;
+      if (callee.builtin_func)
+        cf->blt_fn = callee.builtin_func;
+      else if (callee.func_nd)
+        cf->func_nd = callee.func_nd;
 
       auto calls = (int)cf->args.size();
       auto takes = (int)callee.type.parameters.size() - 1;
@@ -96,7 +122,8 @@ namespace superman::sema {
       for (int i = 0; i < std::min(calls, takes); i++) {
         auto argtype = eval_expr(cf->args[i]).type;
 
-        if (!argtype.equals(is_blt ? callee.builtin_func->arg_types[i] : TypeInfo(/*todo*/))) {
+        // if (!argtype.equals(is_blt ? callee.builtin_func->arg_types[i] : TypeInfo(/*todo*/))) {
+        if (!argtype.equals(callee.type.parameters[i + 1])) {
           todoimpl;
         }
       }
@@ -105,9 +132,7 @@ namespace superman::sema {
         eval_expr(cf->args[i]);
       }
 
-      if (is_blt) return callee.builtin_func->result_type;
-
-      todoimpl;
+      return callee.type.parameters[0];
     }
 
     case NodeKind::Assign: {
@@ -121,12 +146,47 @@ namespace superman::sema {
 
     auto ex = node->as<NdExpr>();
 
-    auto le = eval_expr(ex->lhs).type;
-    auto ri = eval_expr(ex->rhs).type;
+    auto lhs_type = eval_expr(ex->lhs).type;
+    auto rhs_type = eval_expr(ex->rhs).type;
 
-    if (!le.equals(ri)) throw err::mismatched_types(ex->rhs->token, le.to_string(), ri.to_string());
+    struct TypeRule {
+      TypeKind l, r;
+      char const* op;
+      TypeKind res;
+    };
 
-    return le;
+    static TypeRule const type_rules[] = {
+        {TypeKind::Int, TypeKind::Int, "+", TypeKind::Int},
+        {TypeKind::Int, TypeKind::Int, "-", TypeKind::Int},
+        {TypeKind::Int, TypeKind::Int, "*", TypeKind::Int},
+        {TypeKind::Int, TypeKind::Int, "/", TypeKind::Int},
+        {TypeKind::Float, TypeKind::Float, "+", TypeKind::Float},
+        {TypeKind::Float, TypeKind::Float, "-", TypeKind::Float},
+        {TypeKind::Float, TypeKind::Float, "*", TypeKind::Float},
+        {TypeKind::Float, TypeKind::Float, "/", TypeKind::Float},
+        {TypeKind::Int, TypeKind::Float, "+", TypeKind::Float},
+        {TypeKind::Int, TypeKind::Float, "-", TypeKind::Float},
+        {TypeKind::Int, TypeKind::Float, "*", TypeKind::Float},
+        {TypeKind::Int, TypeKind::Float, "/", TypeKind::Float},
+        {TypeKind::Float, TypeKind::Int, "+", TypeKind::Float},
+        {TypeKind::Float, TypeKind::Int, "-", TypeKind::Float},
+        {TypeKind::Float, TypeKind::Int, "*", TypeKind::Float},
+        {TypeKind::Float, TypeKind::Int, "/", TypeKind::Float},
+        {TypeKind::String, TypeKind::String, "+", TypeKind::String},
+        {TypeKind::String, TypeKind::Char, "+", TypeKind::String},
+        {TypeKind::Char, TypeKind::String, "+", TypeKind::String},
+        {TypeKind::String, TypeKind::Int, "*", TypeKind::String},
+        {TypeKind::Int, TypeKind::String, "*", TypeKind::String},
+        {TypeKind::Int, TypeKind::Int, "<<", TypeKind::Int},
+        {TypeKind::Int, TypeKind::Int, ">>", TypeKind::Int}};
+
+    for (auto const& rule : type_rules) {
+      if (rule.l == lhs_type.kind && rule.r == rhs_type.kind && rule.op == ex->token.text) {
+        return TypeInfo(rule.res);
+      }
+    }
+
+    throw err::use_of_invalid_operator(ex->token, lhs_type.to_string(), rhs_type.to_string());
   }
 
   //

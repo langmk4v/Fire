@@ -106,6 +106,14 @@ namespace superman {
           printf("fatal error: function 'main' not defined.\n");
           return -1;
         }
+        else if (mod->main_fn->args.size() > 0) {
+          printf("fatal error: function 'main' cannot have arguments.\n");
+          return -1;
+        }
+        else if (mod->main_fn->result_type){
+          printf("fatal error: result type of 'main' cannot be specified.\n");
+          return -1;
+        }
 
         // std::cout << node2s(node) << std::endl;
 

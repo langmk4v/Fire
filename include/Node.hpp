@@ -91,6 +91,8 @@ namespace superman {
     Module,
   };
 
+  struct NdFunction;
+
   struct Node {
     NodeKind kind;
     Token& token;
@@ -117,6 +119,9 @@ namespace superman {
     NdValue(Token& t) : Node(NodeKind::Value, t) {}
   };
 
+  //
+  // NdSymbol
+  //
   struct NdSymbol : Node {
     enum NameTypes {
       Unknown,
@@ -165,7 +170,9 @@ namespace superman {
     NdTuple(Token& t) : Node(NodeKind::Tuple, t) {}
   };
 
-  struct NdFunction;
+  //
+  // NdCallFunc
+  //
   struct NdCallFunc : Node {
     Node* callee;
     std::vector<Node*> args;

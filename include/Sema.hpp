@@ -253,7 +253,9 @@ namespace superman::sema {
     bool is_type_dependent = false;
     std::vector<Node*> depends;
 
-    builtins::Function const* builtin_func;
+    builtins::Function const* builtin_func = nullptr;
+
+    NdFunction* func_nd = nullptr; // <-- for call-func expr
 
     bool fail() const { return !is_succeed; }
 

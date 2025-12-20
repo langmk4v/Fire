@@ -24,15 +24,14 @@ namespace superman::builtins {
     FuncPointer impl;
 
     static inline builtins::Function const* all_builtin_funcs[]{
-        &builtins::fn_print,
-        &builtins::fn_println,
+        &fn_print,
+        &fn_println,
     };
 
     Function(char const* name, std::vector<TypeInfo> arg_types, TypeInfo result_type,
              bool is_var_arg, FuncPointer impl)
         : name(name), arg_types(std::move(arg_types)), result_type(std::move(result_type)),
-          is_variable_args(is_var_arg), impl(impl) {
-    }
+          is_variable_args(is_var_arg), impl(impl) {}
   };
 
 } // namespace superman::builtins

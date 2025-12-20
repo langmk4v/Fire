@@ -1,5 +1,6 @@
-#include "Eval.hpp"
 #include "BuiltinFunc.hpp"
+#include "Sema.hpp"
+#include "Eval.hpp"
 
 namespace superman {
 
@@ -43,6 +44,14 @@ namespace superman {
       break;
     }
 
+    case NodeKind::Return: {
+      auto ret = node->as<NdReturn>();
+
+      if (ret->expr) cur_stack().result = eval_expr(ret->expr);
+
+      break;
+    }
+
     default:
       eval_expr(node);
       break;
@@ -69,6 +78,9 @@ namespace superman {
       todoimpl;
     }
 
+    //
+    // call-func expression
+    //
     case NodeKind::CallFunc: {
       auto cf = node->as<NdCallFunc>();
 
@@ -79,8 +91,27 @@ namespace superman {
       for (auto&& a : cf->args)
         args.push_back(eval_expr(a));
 
+      // built-in
       if (cf->blt_fn) {
         return cf->blt_fn->impl(args);
+      }
+
+      // user-defined
+      if (cf->func_nd) {
+        auto& stack =
+            push_stack(cf->func_nd->scope_ptr->as<sema::FunctionScope>()->local_var_count);
+
+        for (int i = 0; i < static_cast<int>(cf->func_nd->args.size()); i++) {
+          stack.variables[i] = args[i];
+        }
+
+        eval_stmt(cf->func_nd->body);
+
+        auto res = stack.result;
+
+        pop_stack();
+
+        return res;
       }
 
       todoimpl;
@@ -116,6 +147,56 @@ namespace superman {
       case Ty::Float:
         l->as<ObjFloat>()->val -= r->as<ObjFloat>()->val;
         break;
+      }
+
+      return l;
+    }
+
+    case NodeKind::Mul: {
+      auto [x, l, r] = get_expr_tu(node);
+
+      // Handle string * number
+      if (l->type.kind == Ty::String && (r->type.kind == Ty::Int || r->type.kind == Ty::Float)) {
+        auto str = l->as<ObjString>();
+        int count = (r->type.kind == Ty::Int) ? static_cast<int>(r->as<ObjInt>()->val)
+                                              : static_cast<int>(r->as<ObjFloat>()->val);
+
+        std::u16string result;
+        for (int i = 0; i < count; ++i) {
+          result += str->val;
+        }
+        str->val = result;
+        return l;
+      }
+      // Handle number * string
+      else if ((l->type.kind == Ty::Int || l->type.kind == Ty::Float) &&
+               r->type.kind == Ty::String) {
+        auto str = r->as<ObjString>();
+        int count = (l->type.kind == Ty::Int) ? static_cast<int>(l->as<ObjInt>()->val)
+                                              : static_cast<int>(l->as<ObjFloat>()->val);
+
+        std::u16string result;
+        for (int i = 0; i < count; ++i) {
+          result += str->val;
+        }
+        str->val = result;
+        return r;
+      }
+      // Handle number * number
+      else if (l->type.kind == Ty::Int && r->type.kind == Ty::Int) {
+        l->as<ObjInt>()->val *= r->as<ObjInt>()->val;
+      } else if (l->type.kind == Ty::Float || r->type.kind == Ty::Float) {
+        double lval = (l->type.kind == Ty::Int) ? l->as<ObjInt>()->val : l->as<ObjFloat>()->val;
+        double rval = (r->type.kind == Ty::Int) ? r->as<ObjInt>()->val : r->as<ObjFloat>()->val;
+
+        if (l->type.kind == Ty::Int) {
+          l = new ObjFloat(lval * rval);
+        } else {
+          l->as<ObjFloat>()->val = lval * rval;
+        }
+      } else {
+        // Type error - should be handled by type checker
+        todoimpl;
       }
 
       return l;

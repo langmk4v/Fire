@@ -127,6 +127,12 @@ namespace superman {
       }
     };
 
+    struct use_of_invalid_operator : e {
+      use_of_invalid_operator(Token const& op, std::string const& left, std::string const& right)
+          : e(op, "use of invalid operator '" + op.text + "' for types '" + left + "' and '" + right + "'") {
+      }
+    };
+
   } // namespace err
 
   namespace warns {
