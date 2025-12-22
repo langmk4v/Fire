@@ -1,6 +1,9 @@
-#include "Source.hpp"
+#include <fstream>
+#include <filesystem>
 
-namespace superman {
+#include "Lexer/Source.hpp"
+
+namespace fire::lexer {
 
   SourceCode::SourceCode(std::string const& _path) : path(std::filesystem::absolute(_path)) {
     auto ifs = std::ifstream(this->path);

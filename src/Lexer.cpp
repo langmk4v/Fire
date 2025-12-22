@@ -1,7 +1,8 @@
-#include "macro.h"
-#include "Lexer.hpp"
+#include "Utils/macro.h"
+#include "Lexer/Lexer.hpp"
+#include "Driver/Error.hpp"
 
-namespace superman {
+namespace fire::lexer {
 
   std::vector<Token> Lexer::lex() {
     remove_all_comments();

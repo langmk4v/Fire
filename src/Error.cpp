@@ -1,7 +1,7 @@
-#include "macro.h"
-#include "Error.hpp"
+#include "Utils/macro.h"
+#include "Driver/Error.hpp"
 
-namespace superman::err {
+namespace fire::err {
 
   e::e(Token const& tok, std::string msg, errTypes et)
       : s(tok.source), pos(tok.pos), len(tok.text.length()), msg(std::move(msg)), line(tok.line),

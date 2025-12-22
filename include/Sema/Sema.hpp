@@ -3,14 +3,16 @@
 #include <set>
 
 #include "Parser/Node.hpp"
-#include "TypeInfo.hpp"
-#include "BuiltinFunc.hpp"
+#include "Sema/TypeInfo.hpp"
 
 //
 // スコープコンテキストを主軸として処理をまわす
 //
 
 namespace fire::sema {
+  using namespace lexer;
+  using namespace parser;
+
   enum class SymbolKind {
     Var,
     Func,
@@ -261,8 +263,6 @@ namespace fire::sema {
 
     std::vector<Symbol*> matches;
 
-    std::vector<builtins::Function const*> blt_funcs;
-
     auto begin() { return matches.begin(); }
     auto end() { return matches.end(); }
 
@@ -309,7 +309,7 @@ namespace fire::sema {
     bool is_type_dependent = false;
     std::vector<Node*> depends;
 
-    builtins::Function const* builtin_func = nullptr;
+    vm::interp::Sys builtin_func_id = vm::interp::Sys::None;
 
     //
     //  func_nd

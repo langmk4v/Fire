@@ -1,10 +1,17 @@
 #include <algorithm>
 
-#include "macro.h"
-#include "Error.hpp"
-#include "Sema.hpp"
+#include "Utils/macro.h"
 
-namespace superman::sema {
+#include "VM/Interp/Object.hpp"
+#include "Driver/Error.hpp"
+#include "Sema/Sema.hpp"
+
+namespace fire::sema {
+
+  using namespace lexer;
+  using namespace parser;
+
+  using vm::interp::Sys;
 
   //
   // eval_expr
@@ -26,10 +33,10 @@ namespace superman::sema {
 
       auto result = find_symbol(sym);
 
-      if (result.empty() && result.blt_funcs.empty())
+      if (result.empty())
         throw err::use_of_undefined_symbol(sym->name);
 
-      if (result.count() + result.blt_funcs.size() >= 2)
+      if (result.count() >= 2)
         throw err::ambiguous_symbol_name(sym->name);
 
       if (result.count()) {
@@ -81,6 +88,7 @@ namespace superman::sema {
         }
       }
 
+      /*
       sym->type = NdSymbol::BuiltinFunc;
       sym->sym_target_bltin = result.blt_funcs[0];
 
@@ -93,6 +101,9 @@ namespace superman::sema {
       res.builtin_func = sym->sym_target_bltin;
 
       return res;
+      */
+
+      todo;
     }
 
     //
@@ -101,7 +112,7 @@ namespace superman::sema {
     case NodeKind::CallFunc: {
       auto cf = node->as<NdCallFunc>();
 
-      auto callee = eval_expr(cf->callee);
+      ExprType callee = eval_expr(cf->callee);
 
       if (callee.fail()) {
         todo;
@@ -111,18 +122,16 @@ namespace superman::sema {
         throw err::not_callable_type(cf->callee->token, callee.type.to_string());
       }
 
-      bool is_blt = callee.builtin_func != nullptr;
+      bool is_blt = callee.builtin_func_id != Sys::None;
 
-      if (callee.builtin_func)
-        cf->blt_fn = callee.builtin_func;
-      else if (callee.func_nd)
+      if (callee.func_nd)
         cf->func_nd = callee.func_nd;
 
       auto calls = (int)cf->args.size();
       auto takes = (int)callee.type.parameters.size() - 1;
 
       if (calls != takes) {
-        bool is_var_arg = is_blt && callee.builtin_func->is_variable_args;
+        bool is_var_arg = is_blt && vm::interp::is_var_args_fn(callee.builtin_func_id);
 
         if (!is_var_arg) {
           // todo: get isvararg flag of user-def func

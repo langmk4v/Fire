@@ -17,7 +17,7 @@ namespace fire::vm {
     public:
       Compiler(std::vector<Instruction>& out);
 
-      void compile(Node* node);
+      void compile(parser::Node* node);
 
     private:
 

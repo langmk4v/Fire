@@ -1,12 +1,7 @@
 #pragma once
 
-#include "macro.h"
-#include "Strings.hpp"
-
-#include "VM/Object.hpp"
 #include "Parser/Node.hpp"
 #include "Lexer/Lexer.hpp"
-#include "Application/Error.hpp"
 
 namespace fire::lexer {
   struct SourceCode;
@@ -80,9 +75,8 @@ namespace fire::parser {
     NdModule* parse();
 
   private:
-    using TK = TokenKind;
     bool is_end() {
-      return cur->is(TK::Eof);
+      return cur->is(lexer::TokenKind::Eof);
     }
     bool eat(char const* s) {
       return cur->text == s ? (cur++, true) : false;
@@ -95,7 +89,7 @@ namespace fire::parser {
       return cur++;
     }
     Token* expect_ident() {
-      if (cur->kind != TokenKind::Identifier) throw err::expected_identifier_tok(*cur);
+      if (cur->kind != lexer::TokenKind::Identifier) throw err::expected_identifier_tok(*cur);
       return cur++;
     }
   };

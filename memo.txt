@@ -60,6 +60,9 @@ namespace fire {
     }
 
     namespace interp {
+
+      enum class Sys : uint32_t;
+
       struct Object;
 
       struct VCPU;    // Virtual CPU

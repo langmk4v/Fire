@@ -12,7 +12,7 @@ BACKUP_FOLDER	:=	$(TOPDIR)/.bak
 INCLUDE_DIR		:=	include
 
 SOURCE_DIR		:=	src \
-					src/Parser \
+					src/Driver \
 					src/Sema
 
 CC			:=	clang

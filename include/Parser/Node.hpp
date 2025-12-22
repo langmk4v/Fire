@@ -2,25 +2,30 @@
 
 #include <vector>
 #include "Lexer/Token.hpp"
+#include "VM/Interp/Sys.hpp"
 
-namespace fire::builtins {
-  struct Function;
-}
+namespace fire {
+  namespace lexer {
+    struct Token;
+    struct SourceCode;
+  }
 
-namespace fire::lexer {
-  struct Token;
-  struct SourceCode;
-}
+  namespace sema {
+    struct ScopeContext;
+    struct VariableInfo;
+  }
 
-namespace fire::sema {
-  struct ScopeContext;
-  struct VariableInfo;
+  namespace vm::interp {
+    struct Object;
+  }
 }
 
 namespace fire::parser {
 
   using lexer::Token;
   using lexer::SourceCode;
+
+  using vm::interp::Object;
 
   enum class NodeKind {
     Value,
@@ -145,7 +150,10 @@ namespace fire::parser {
     NdSymbol* next = nullptr;       // scope-resolution
 
     Node* sym_target = nullptr;
-    builtins::Function const* sym_target_bltin = nullptr;
+    
+    vm::interp::Sys builtin_f = vm::interp::Sys::None;
+
+    // builtins::Function const* sym_target_bltin = nullptr;
 
     bool is_ref = false;            //
     bool is_const = false;          //
@@ -182,9 +190,10 @@ namespace fire::parser {
     Node* callee;
     std::vector<Node*> args;
 
-    builtins::Function const* blt_fn = nullptr;
-
     NdFunction* func_nd = nullptr;
+    vm::interp::Sys builtin = vm::interp::Sys::None;
+
+    bool is_builtin() const { return !func_nd; }
 
     NdCallFunc(Node* callee, Token& tok) : Node(NodeKind::CallFunc, tok), callee(callee) {}
   };

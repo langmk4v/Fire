@@ -1,11 +1,13 @@
-#include "macro.h"
-#include "Strings.hpp"
+#include "Utils/macro.h"
+#include "Utils/Strings.hpp"
 
-#include "Error.hpp"
+#include "VM/Interp/Object.hpp"
+#include "Parser/Parser.hpp"
+#include "Driver/Error.hpp"
 
-#include "Parser.hpp"
+namespace fire::parser {
 
-namespace superman {
+  using namespace lexer;
 
   NdSymbol* Parser::ps_symbol(bool as_typename) {
     auto sym = new NdSymbol(*expect_ident());
@@ -83,6 +85,8 @@ namespace superman {
     NdValue* v = new NdValue(*cur);
 
     switch (cur->kind) {
+      using namespace vm::interp;
+
       case TokenKind::Int:
         v->obj = new ObjInt(std::stoll(cur->text));
         cur++;

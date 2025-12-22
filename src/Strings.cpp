@@ -1,6 +1,6 @@
-#include "Strings.hpp"
+#include "Utils/Strings.hpp"
 
-namespace superman::strings {
+namespace fire::strings {
 
   static std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
 

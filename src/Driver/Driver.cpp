@@ -2,17 +2,29 @@
 
 #include <string>
 
-#include "macro.h"
-#include "Strings.hpp"
+#include "Utils/macro.h"
+#include "Utils/Strings.hpp"
 
-#include "Lexer.hpp"
-#include "Parser.hpp"
-#include "Sema.hpp"
-#include "Eval.hpp"
+#include "Lexer/Source.hpp"
+#include "Lexer/Token.hpp"
+#include "Lexer/Lexer.hpp"
 
-#include "Application.hpp"
+#include "Parser/Node.hpp"
+#include "Parser/Parser.hpp"
 
-namespace superman {
+#include "Sema/Sema.hpp"
+
+#include "VM/Compiler.hpp"
+#include "VM/Interp/Interp.hpp"
+
+#include "Driver/Driver.hpp"
+#include "Driver/Error.hpp"
+
+namespace fire {
+
+  using namespace parser;
+  using namespace lexer;
+
   static std::string node2s(Node* node) {
     static int indent = 0;
 
@@ -80,11 +92,11 @@ namespace superman {
     }
   }
 
-  Application::Application() {}
+  Driver::Driver() {}
 
-  Application::~Application() {}
+  Driver::~Driver() {}
 
-  int Application::main(int argc, char** argv) {
+  int Driver::main(int argc, char** argv) {
     for (int i = 1; i < argc; i++)
       this->inputs.emplace_back(argv[i]);
 
@@ -122,16 +134,6 @@ namespace superman {
 
         auto se = sema::Sema(mod);
         se.analyze_full();
-
-        auto ev = Evaluator();
-
-        for (auto x : mod->items) {
-          if (x->is(NodeKind::Let)) ev.add_global_var(x->as<NdLet>());
-        }
-
-        ev.push_stack(mod->scope_ptr->as<sema::ModuleScope>()->variables.size());
-
-        ev.eval_stmt(mod->main_fn->body);
 
         return 0;
       } catch (int n) {

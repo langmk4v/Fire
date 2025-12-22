@@ -1,9 +1,13 @@
 #pragma once
 
 #include <cstdint>
-#include "TypeInfo.hpp"
 
-namespace fire::vm {
+#include "Sema/TypeInfo.hpp"
+
+namespace fire::vm::interp {
+
+  using sema::TypeKind;
+  using sema::TypeInfo;
 
   struct ObjNone;
 

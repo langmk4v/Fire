@@ -1,11 +1,12 @@
 #include <unordered_map>
 
-#include "macro.h"
-#include "Strings.hpp"
-#include "Object.hpp"
-#include "Node.hpp"
-#include "Error.hpp"
-#include "Sema.hpp"
+#include "Utils/macro.h"
+#include "Utils/Strings.hpp"
+
+#include "VM/Interp/Object.hpp"
+#include "Parser/Node.hpp"
+#include "Driver/Error.hpp"
+#include "Sema/Sema.hpp"
 
 /*
  * ＠自分へ
@@ -14,7 +15,9 @@
  *  宜しくお願いします。
  */
 
-namespace superman::sema {
+namespace fire::sema {
+
+
 
   //
   // new_var_symbol
@@ -61,11 +64,13 @@ namespace superman::sema {
     }
 
     if (r.empty()) {
+      todo;
+      
       // find in builtin functions
-      for (auto&& bf : builtins::Function::all_builtin_funcs)
-        if (bf->name == node->name.text) r.blt_funcs.push_back(bf);
+      // for (auto&& bf : builtins::Function::all_builtin_funcs)
+      //   if (bf->name == node->name.text) r.blt_funcs.push_back(bf);
 
-      if (r.blt_funcs.empty()) return r;
+      // if (r.blt_funcs.empty()) return r;
     }
 
     // loop for scope resolutions

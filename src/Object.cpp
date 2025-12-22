@@ -1,8 +1,8 @@
-#include "macro.h"
-#include "Strings.hpp"
-#include "Object.hpp"
+#include "Utils/macro.h"
+#include "Utils/Strings.hpp"
+#include "VM/Interp/Object.hpp"
 
-namespace superman {
+namespace fire::vm::interp {
 
   ObjNone* Object::none = new ObjNone();
 

@@ -1,8 +1,8 @@
-#include "macro.h"
-#include "Node.hpp"
-#include "TypeInfo.hpp"
+#include "Utils/macro.h"
+#include "Parser/Node.hpp"
+#include "Sema/TypeInfo.hpp"
 
-namespace superman {
+namespace fire::sema {
 
   bool TypeInfo::equals(TypeInfo const& t, bool cr, bool cc) const {
 

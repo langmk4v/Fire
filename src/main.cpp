@@ -1,7 +1,5 @@
-// clang-format off
-
-#include "Application.hpp"
+#include "Driver/Driver.hpp"
 
 int main(int argc, char** argv) {
-  return superman::Application().main(argc, argv);
+  return fire::Driver().main(argc, argv);
 }

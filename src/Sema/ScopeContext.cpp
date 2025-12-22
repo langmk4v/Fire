@@ -1,7 +1,7 @@
-#include "macro.h"
-#include "Sema.hpp"
+#include "Utils/macro.h"
+#include "Sema/Sema.hpp"
 
-namespace superman::sema {
+namespace fire::sema {
 
   //
   // UnnamedScope

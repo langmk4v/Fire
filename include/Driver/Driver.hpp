@@ -2,11 +2,13 @@
 
 #include <vector>
 
-namespace fire {
+namespace fire::lexer {
   struct SourceCode;
+}
 
+namespace fire {
   class Driver {
-    std::vector<SourceCode> inputs;
+    std::vector<lexer::SourceCode> inputs;
 
   public:
     Driver();

@@ -1,64 +1,19 @@
-#include "BuiltinFunc.hpp"
-#include "Sema.hpp"
-#include "Eval.hpp"
+#include "Sema/Sema.hpp"
+#include "VM/Interp/Interp.hpp"
+#include "Utils/macro.h"
 
-namespace superman {
+namespace fire::vm::interp {
 
-  Evaluator::CallStack::CallStack(int vn) { variables.resize(vn); }
+  using namespace lexer;
+  using namespace parser;
+  using namespace sema;
 
-  Evaluator::CallStack::~CallStack() {}
-
-  Evaluator::CallStack& Evaluator::push_stack(int var_count) {
-    return *call_stack.emplace_back(new CallStack(var_count));
+  static auto get_expr_tu(Interp* i, Node* node) {
+    auto x = node->as<NdExpr>();
+    return std::make_tuple(x, i->eval_expr(x->lhs), i->eval_expr(x->rhs));
   }
 
-  void Evaluator::pop_stack() {
-    delete call_stack.back();
-    call_stack.pop_back();
-  }
-
-  void Evaluator::eval_stmt(Node* node) {
-    switch (node->kind) {
-
-    case NodeKind::Module:
-    case NodeKind::Function:
-    case NodeKind::Class:
-    case NodeKind::Enum:
-      break;
-
-    case NodeKind::Scope: {
-      auto scope = node->as<NdScope>();
-
-      for (auto s : scope->items) {
-        eval_stmt(s);
-      }
-
-      break;
-    }
-
-    case NodeKind::Let: {
-      auto let = node->as<NdLet>();
-
-      if (let->init) cur_stack().variables[let->index] = eval_expr(let->init);
-
-      break;
-    }
-
-    case NodeKind::Return: {
-      auto ret = node->as<NdReturn>();
-
-      if (ret->expr) cur_stack().result = eval_expr(ret->expr);
-
-      break;
-    }
-
-    default:
-      eval_expr(node);
-      break;
-    }
-  }
-
-  Object* Evaluator::eval_expr(Node* node) {
+  Object* Interp::eval_expr(Node* node) {
 
     assert(node != nullptr);
 
@@ -71,8 +26,7 @@ namespace superman {
 
       switch (sym->type) {
       case NdSymbol::Var:
-        if (sym->is_global_var) return globals[sym->var_offset];
-        return cur_stack().variables[sym->var_offset];
+        todo;
       }
 
       todoimpl;
@@ -91,29 +45,12 @@ namespace superman {
       for (auto&& a : cf->args)
         args.push_back(eval_expr(a));
 
-      // built-in
-      if (cf->blt_fn) {
-        return cf->blt_fn->impl(args);
-      }
-
       // user-defined
       if (cf->func_nd) {
-        auto& stack =
-            push_stack(cf->func_nd->scope_ptr->as<sema::FunctionScope>()->local_var_count);
-
-        for (int i = 0; i < static_cast<int>(cf->func_nd->args.size()); i++) {
-          stack.variables[i] = args[i];
-        }
-
-        eval_stmt(cf->func_nd->body);
-
-        auto res = stack.result;
-
-        pop_stack();
-
-        return res;
+        todo;
       }
 
+      // built-in
       todoimpl;
     }
 
@@ -133,7 +70,7 @@ namespace superman {
       using Ty = TypeKind;
 
     case NodeKind::Add: {
-      auto [x, l, r] = get_expr_tu(node);
+      auto [x, l, r] = get_expr_tu(this, node);
 
       switch (l->type.kind) {
       case Ty::Int:
@@ -151,7 +88,7 @@ namespace superman {
     }
 
     case NodeKind::Sub: {
-      auto [x, l, r] = get_expr_tu(node);
+      auto [x, l, r] = get_expr_tu(this, node);
 
       switch (l->type.kind) {
       case Ty::Int:
@@ -166,7 +103,7 @@ namespace superman {
     }
 
     case NodeKind::Mul: {
-      auto [x, l, r] = get_expr_tu(node);
+      auto [x, l, r] = get_expr_tu(this, node);
 
       // Handle string * number
       if (l->type.kind == Ty::String && (r->type.kind == Ty::Int || r->type.kind == Ty::Float)) {
@@ -222,8 +159,5 @@ namespace superman {
     return Object::none;
   }
 
-  void Evaluator::add_global_var(NdLet* let) {
-    globals.push_back(let->init ? eval_expr(let->init) : nullptr);
-  }
 
-} // namespace superman
+}

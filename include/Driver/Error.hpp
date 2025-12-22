@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Strings.hpp"
+#include "Utils/Strings.hpp"
 
 #include "Lexer/Token.hpp"
 #include "Lexer/Source.hpp"
@@ -13,6 +13,9 @@ namespace fire {
   };
 
   namespace err {
+    using lexer::Token;
+    using lexer::SourceCode;
+    
     struct e {
       SourceCode& s;
       size_t pos;
@@ -148,6 +151,8 @@ namespace fire {
   } // namespace err
 
   namespace warns {
+    using lexer::Token;
+    
     struct W : err::e {
       W* operator()() {
         print();
