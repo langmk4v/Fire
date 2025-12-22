@@ -1,21 +1,26 @@
 #pragma once
 
 #include <vector>
-#include "Token.hpp"
+#include "Lexer/Token.hpp"
 
-namespace superman {
+namespace fire::builtins {
+  struct Function;
+}
 
-  namespace builtins {
-    struct Function;
-  }
-
-  namespace sema {
-    struct ScopeContext;
-    struct VariableInfo;
-  } // namespace sema
-
+namespace fire::lexer {
   struct Token;
-  struct Object;
+  struct SourceCode;
+}
+
+namespace fire::sema {
+  struct ScopeContext;
+  struct VariableInfo;
+}
+
+namespace fire::parser {
+
+  using lexer::Token;
+  using lexer::SourceCode;
 
   enum class NodeKind {
     Value,

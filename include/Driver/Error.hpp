@@ -1,13 +1,11 @@
 #pragma once
 
 #include "Strings.hpp"
-#include "Token.hpp"
-#include "Source.hpp"
 
-namespace superman {
-  using std::string;
-  using std::string_literals::operator""s;
+#include "Lexer/Token.hpp"
+#include "Lexer/Source.hpp"
 
+namespace fire {
   enum errTypes {
     ET_Error,
     ET_Warn,
@@ -140,6 +138,12 @@ namespace superman {
     struct too_many_arguments : e {
       too_many_arguments(Token const& t) : e(t, "too many arguments") { }
     };
+
+    namespace semantics {
+      struct this_is_not_typename : e {
+        this_is_not_typename(Token const&t) : e(t, "'" + t.text+ "' is not type name") { }
+      };
+    }
 
   } // namespace err
 

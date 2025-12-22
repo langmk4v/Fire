@@ -2,7 +2,7 @@
 
 #include <set>
 
-#include "Node.hpp"
+#include "Parser/Node.hpp"
 #include "TypeInfo.hpp"
 #include "BuiltinFunc.hpp"
 
@@ -10,10 +10,11 @@
 // スコープコンテキストを主軸として処理をまわす
 //
 
-namespace superman::sema {
+namespace fire::sema {
   enum class SymbolKind {
     Var,
     Func,
+    Method,
     Enum,
     Enumerator,
     Class,
@@ -22,6 +23,12 @@ namespace superman::sema {
   };
 
   struct ScopeContext;
+  struct UnnamedScope;
+  struct FunctionScope;
+  struct EnumScope;
+  struct ClassScope;
+  struct ModuleScope;
+
   struct VariableInfo;
 
   //
@@ -34,7 +41,15 @@ namespace superman::sema {
 
     Node* node = nullptr;
 
-    ScopeContext* scope_ctx = nullptr;
+    union {
+      ScopeContext* scope_ctx = nullptr;
+
+      UnnamedScope* unnscope;
+      FunctionScope* fnscope;
+      EnumScope* enscope;
+      ClassScope* clscope;
+      ModuleScope* modscope;
+    };
 
     VariableInfo* var_info = nullptr; // if variable
 
@@ -48,8 +63,14 @@ namespace superman::sema {
       return is(SymbolKind::Enum) || is(SymbolKind::Class) || is(SymbolKind::TemplateParam);
     }
 
-    static Symbol* new_var_symbol(NdLet* let);
+    //
+    // new_var_symbol
+    //  ローカル変数またはグローバル変数、メンバ変数用のシンボル情報を作成
+    static Symbol* new_var_symbol(NdLet* let, bool is_field = false);
 
+    //
+    // new_arg_symbol
+    //  関数の引数用のシンボル情報を作成
     static Symbol* new_arg_symbol(NdFunction::Argument* arg);
 
     Symbol(SymbolKind k, std::string const& n, Node* node) : kind(k), name(n), node(node) {}
@@ -84,12 +105,16 @@ namespace superman::sema {
 
     bool is_global = false;
 
+    bool is_field = false;
+
     NdLet* def_let = nullptr;
     NdFunction::Argument* def_arg = nullptr;
 
     std::set<Node*> assignments; // <-- Assign or Let
 
     bool is_argument() const { return def_arg != nullptr; }
+
+    bool is_local_v() const { return !is_global && !is_field && !is_argument(); }
 
     VariableInfo() {}
   };
@@ -165,7 +190,33 @@ namespace superman::sema {
 
   struct EnumScope : ScopeContext {};
 
-  struct ClassScope : ScopeContext {};
+  struct ClassScope : ScopeContext {
+    SymbolTable fields;
+    SymbolTable methods;
+
+    Symbol* method_new = nullptr;
+    Symbol* method_delete = nullptr;
+
+    size_t find_symbol(std::vector<Symbol*>& out, std::string const& name) const override {
+      return find_field(out, name) + find_method(out, name);
+    }
+
+    size_t find_field(std::vector<Symbol*>& out, std::string const& name) const {
+      for (auto&& v : fields)
+        if (v->name == name) out.push_back(v);
+
+      return out.size();
+    }
+
+    size_t find_method(std::vector<Symbol*>& out, std::string const& name) const {
+      for (auto&& v : methods)
+        if (v->name == name) out.push_back(v);
+
+      return out.size();
+    }
+
+    ClassScope(NdClass*);
+  };
 
   struct ModuleScope : ScopeContext {
     SymbolTable variables;
@@ -244,9 +295,12 @@ namespace superman::sema {
   };
 
   //
-  // ExprTypeResult
+  // ExprType
   // 式の型を評価して、その型と他の情報を表す構造体
-  struct ExprTypeResult {
+  struct ExprType {
+
+    Node* node = nullptr;
+
     TypeInfo type;
 
     bool is_succeed = false;
@@ -257,13 +311,25 @@ namespace superman::sema {
 
     builtins::Function const* builtin_func = nullptr;
 
-    NdFunction* func_nd = nullptr; // <-- for call-func expr
+    //
+    //  func_nd
+    //  - set pointer if node is:
+    //    - NdSymbol
+    //    - NdCallFunc
+    NdFunction* func_nd = nullptr;
+
+    //
+    //  class_nd
+    //  - set pointer if node is:
+    //    - NdSymbol
+    //    - NdNew
+    NdClass* class_nd = nullptr;
 
     bool fail() const { return !is_succeed; }
 
-    ExprTypeResult() {}
+    ExprType(Node* node = nullptr) : node(node) {}
 
-    ExprTypeResult(TypeInfo t) : type(std::move(t)) { is_succeed = true; }
+    ExprType(Node* node, TypeInfo t) : node(node), type(std::move(t)) { is_succeed = true; }
   };
 
   class Sema {
@@ -277,14 +343,15 @@ namespace superman::sema {
     void analyze_full();
 
     void check_module(ModuleScope* mod);
+    void check_class(ClassScope* func);
     void check_function(FunctionScope* func);
     void check_scope(UnnamedScope* scope);
 
     void check_let(NdLet* let);
 
-    ExprTypeResult eval_expr(Node* node);
+    ExprType eval_expr(Node* node);
 
-    ExprTypeResult eval_typename(NdSymbol* node);
+    ExprType eval_typename(NdSymbol* node);
 
   private:
     SymbolFindResult find_symbol(NdSymbol* node);

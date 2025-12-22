@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace superman {
+namespace fire::lexer {
   enum class TokenKind {
     Unknown,
     Int,

@@ -1,10 +1,8 @@
 #pragma once
 
 #include <string>
-#include <fstream>
-#include <filesystem>
 
-namespace superman {
+namespace fire::lexer {
   struct SourceCode {
     std::string path;
     std::string data;

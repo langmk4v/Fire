@@ -1,6 +1,6 @@
 TOPDIR		?=	$(CURDIR)
 
-TARGET		:=	superman
+TARGET		:=	fire
 
 BUILD_ROOT		:=	build
 BUILD_DEBUG		:=	debug

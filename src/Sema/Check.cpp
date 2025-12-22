@@ -18,13 +18,13 @@ namespace superman::sema {
 
   //
   // new_var_symbol
-  //  ローカル変数またはグローバル変数用のシンボル情報を作成
   //
-  Symbol* Symbol::new_var_symbol(NdLet* let) {
+  Symbol* Symbol::new_var_symbol(NdLet* let, bool is_field) {
     auto s = new Symbol(SymbolKind::Var, let->name.text, let);
 
     s->var_info = new VariableInfo();
     s->var_info->def_let = let;
+    s->var_info->is_field = is_field;
 
     let->var_info_ptr = s->var_info;
 
@@ -33,7 +33,6 @@ namespace superman::sema {
 
   //
   // new_arg_symbol
-  //  関数の引数用のシンボル情報を作成
   //
   Symbol* Symbol::new_arg_symbol(NdFunction::Argument* arg) {
     auto s = new Symbol(SymbolKind::Var, arg->name.text, arg);
@@ -122,10 +121,33 @@ namespace superman::sema {
         check_function(item->scope_ptr->as<FunctionScope>());
         break;
       }
+
+      case NodeKind::Class: {
+        check_class(item->scope_ptr->as<ClassScope>());
+        break;
+      }
+
+      default:
+        todoimpl;
       }
     }
 
     cur_scope = _save;
+  }
+
+  void Sema::check_class(ClassScope* cs) {
+    NdClass* node = cs->node->as<NdClass>();
+
+    (void)node;
+
+    for (auto f : cs->fields)
+      check_let(f->node->as<NdLet>());
+
+    for (auto m : cs->methods)
+      check_function(m->fnscope);
+
+    if (cs->method_new) check_function(cs->method_new->fnscope);
+    if (cs->method_delete) check_function(cs->method_delete->fnscope);
   }
 
   void Sema::check_function(FunctionScope* func) {
@@ -209,7 +231,8 @@ namespace superman::sema {
 
           // => 指定ありで型が一致しない場合はエラー
           if (auto ex = eval_expr(ret->expr).type; !fs->result_type.equals(ex)) {
-            err::mismatched_types(ret->expr->token, fs->result_type.to_string(), ex.to_string()).print();
+            err::mismatched_types(ret->expr->token, fs->result_type.to_string(), ex.to_string())
+                .print();
             warns::show_note(fs->node->as<NdFunction>()->result_type->token, "specified here")();
           }
         }

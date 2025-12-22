@@ -2,14 +2,19 @@
 
 #include <vector>
 
-#include "Token.hpp"
-#include "Source.hpp"
+#include "Lexer/Token.hpp"
+#include "Lexer/Source.hpp"
 
-#include "Error.hpp"
+#include "Driver/Error.hpp"
 
-namespace superman {
+namespace fire::parser {
+  class Parser;
+}
+
+namespace fire::lexer {
+
   class Lexer {
-    friend class Parser;
+    friend class parser::Parser;
 
     SourceCode& _source;
     size_t _pos;

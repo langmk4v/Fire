@@ -1,3 +1,5 @@
+#include "macro.h"
+#include "Node.hpp"
 #include "TypeInfo.hpp"
 
 namespace superman {
@@ -13,7 +15,6 @@ namespace superman {
     }
 
     if (cr && is_ref != t.is_ref) return false;
-
     if (cc && is_const != t.is_const) return false;
 
     return true;
@@ -22,10 +23,20 @@ namespace superman {
   std::string TypeInfo::to_string() const {
     static char const* names[]{
         "none",   "int",   "float", "bool",     "char",    "string",
-        "vector", "tuple", "dict",  "function", "userdef",
+        "vector", "tuple", "dict",  "function",
     };
 
-    std::string str = names[static_cast<size_t>(kind)];
+    std::string str;
+
+    switch (kind) {
+      case TypeKind::Class:
+        str = this->class_node->name.text;
+        break;
+      
+      default:
+        str = names[static_cast<size_t>(kind)];
+        break;
+    }
 
     if (!parameters.empty()) {
       str += "<";

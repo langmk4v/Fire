@@ -3,14 +3,21 @@
 #include "macro.h"
 #include "Strings.hpp"
 
-#include "Node.hpp"
-#include "Object.hpp"
-#include "Error.hpp"
-#include "Lexer.hpp"
+#include "VM/Object.hpp"
+#include "Parser/Node.hpp"
+#include "Lexer/Lexer.hpp"
+#include "Application/Error.hpp"
 
-namespace superman {
-  class Lexer;
+namespace fire::lexer {
   struct SourceCode;
+  struct Token;
+  class Lexer;
+}
+
+namespace fire::parser {
+  using lexer::SourceCode;
+  using lexer::Token;
+  using lexer::Lexer;
 
   class Parser {
     Lexer& lexer;

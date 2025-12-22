@@ -48,6 +48,35 @@ namespace superman::sema {
   }
 
   //
+  // ClassScope
+  //
+  ClassScope::ClassScope(NdClass* cla) : ScopeContext(cla) {
+    cla->scope_ptr = this;
+
+    for (auto f : cla->fields)
+      fields.append(Symbol::new_var_symbol(f, true));
+
+    for (auto m : cla->methods) {
+      auto ms = methods.append(new Symbol(SymbolKind::Method, m->name.text, m));
+
+      auto ctx = new FunctionScope(m);
+      ctx->parent = this;
+
+      ms->scope_ctx = ctx;
+    }
+
+    if (cla->m_new) {
+      method_new = new Symbol(SymbolKind::Func, "new", cla->m_new);
+      method_new->fnscope = new FunctionScope(cla->m_new);
+      method_new->fnscope->parent = this;
+    }
+
+    if (cla->m_delete) {
+      todoimpl;
+    }
+  }
+
+  //
   // ModuleScope
   //
   ModuleScope::ModuleScope(NdModule* mod) : ScopeContext(mod) {
@@ -87,7 +116,17 @@ namespace superman::sema {
       }
 
       case NodeKind::Class: {
-        todoimpl;
+        auto cla = item->as<NdClass>();
+
+        auto ctx = new ClassScope(cla);
+        ctx->parent = this;
+
+        auto cs = new Symbol(SymbolKind::Class, cla->name.text, cla);
+        cs->scope_ctx = ctx;
+
+        classes.append(cs);
+
+        break;
       }
 
       default:

@@ -9,21 +9,28 @@ namespace superman::sema {
   //
   // eval_expr
   //
-  ExprTypeResult Sema::eval_expr(Node* node) {
+  ExprType Sema::eval_expr(Node* node) {
     switch (node->kind) {
-    case NodeKind::Value:
-      return node->as<NdValue>()->obj->type;
 
+      //
+      // Value
+      //
+    case NodeKind::Value:
+      return { node, node->as<NdValue>()->obj->type };
+
+      //
+      // Symbol
+      //
     case NodeKind::Symbol: {
       auto sym = node->as<NdSymbol>();
 
       auto result = find_symbol(sym);
 
-      if (result.empty() && result.blt_funcs.empty()) throw err::use_of_undefined_symbol(sym->name);
+      if (result.empty() && result.blt_funcs.empty())
+        throw err::use_of_undefined_symbol(sym->name);
 
-      if (result.count() + result.blt_funcs.size() >= 2) {
+      if (result.count() + result.blt_funcs.size() >= 2)
         throw err::ambiguous_symbol_name(sym->name);
-      }
 
       if (result.count()) {
         auto S = result.matches[0];
@@ -33,19 +40,19 @@ namespace superman::sema {
         switch (S->kind) {
         case SymbolKind::Var: {
           if (!S->var_info->is_argument() && !S->var_info->is_type_deducted) {
-            todoimpl;
+            todo;
           }
 
           debug(
-          if(S->var_info->is_argument()) {
-            assert(S->var_info->is_type_deducted);
-          })
+            if (S->var_info->is_argument())
+              assert(S->var_info->is_type_deducted);
+          )
 
           sym->type = NdSymbol::Var;
           sym->is_global_var = S->var_info->is_global;
           sym->var_offset = S->var_info->offset;
 
-          return S->var_info->type;
+          return { node, S->var_info->type };
         }
 
         case SymbolKind::Func: {
@@ -62,7 +69,7 @@ namespace superman::sema {
           for (auto&& arg : f->args)
             ti.parameters.emplace_back(eval_typename(arg.type).type);
 
-          auto res = ExprTypeResult(ti);
+          auto res = ExprType(node, ti);
 
           res.func_nd = f;
 
@@ -70,7 +77,7 @@ namespace superman::sema {
         }
 
         default:
-          todoimpl;
+          todo;
         }
       }
 
@@ -81,19 +88,23 @@ namespace superman::sema {
 
       ti.parameters.insert(ti.parameters.begin(), sym->sym_target_bltin->result_type);
 
-      auto res = ExprTypeResult(ti);
+      auto res = ExprType(node, ti);
+
       res.builtin_func = sym->sym_target_bltin;
 
       return res;
     }
 
+    //
+    // CallFunc
+    //
     case NodeKind::CallFunc: {
       auto cf = node->as<NdCallFunc>();
 
       auto callee = eval_expr(cf->callee);
 
       if (callee.fail()) {
-        todoimpl;
+        todo;
       }
 
       if (callee.type.kind != TypeKind::Function) {
@@ -127,79 +138,105 @@ namespace superman::sema {
         TypeInfo argtype = eval_expr(cf->args[i]).type;
 
         if (!argtype.equals(callee.type.parameters[i + 1]))
-          throw err::mismatched_types(cf->args[i]->token, callee.type.parameters[i + 1].to_string(), argtype.to_string());
+          throw err::mismatched_types(cf->args[i]->token, callee.type.parameters[i + 1].to_string(),
+                                      argtype.to_string());
       }
 
       for (int i = takes; i < calls; i++) {
         eval_expr(cf->args[i]);
       }
 
-      return callee.type.parameters[0];
+      return { node, callee.type.parameters[0] };
+    }
+
+    case NodeKind::New: {
+      auto new_nd = node->as<NdNew>();
+
+      ExprType class_type = eval_typename(new_nd->type);
+
+      if (!class_type.class_nd) {
+        todo;
+      }
+
+      ExprType result = ExprType();
+
+      result.type = TypeKind::Class;
+      result.type.class_node = class_type.class_nd;
+
+      result.node = node;
+
+      // printd(result.type.to_string());
+
+      return result;
     }
 
     case NodeKind::Assign: {
-      todoimpl;
+      todo;
     }
     }
 
     if (!node->is_expr()) {
-      todoimpl;
+      todo;
     }
 
     NdExpr* ex = node->as<NdExpr>();
 
-    TypeInfo left = eval_expr(ex->lhs).type;
-    TypeInfo right = eval_expr(ex->rhs).type;
+    ExprType left_e = eval_expr(ex->lhs);
+    ExprType right_e = eval_expr(ex->rhs);
 
-    std::string const ls = left.to_string();
-    std::string const rs = right.to_string();
+    TypeInfo& left = left_e.type;
+    TypeInfo& right = right_e.type;
 
     switch (ex->kind) {
-      case NodeKind::Add:
-        if (left.is(TypeKind::String) && right.is(TypeKind::String))
-          return TypeInfo(TypeKind::String);
-        break;
+    case NodeKind::Add:
+      if (left.is(TypeKind::String) && right.is(TypeKind::String))
+        return { node, TypeInfo(TypeKind::String) };
+      break;
 
-      case NodeKind::Mul:
-        if ((left.is(TypeKind::Int) && right.is(TypeKind::String)) || (left.is(TypeKind::String) && right.is(TypeKind::Int)))
-          return TypeInfo(TypeKind::String);
-        break;
+    case NodeKind::Mul:
+      if ((left.is(TypeKind::Int) && right.is(TypeKind::String)) ||
+          (left.is(TypeKind::String) && right.is(TypeKind::Int)))
+        return { node, TypeInfo(TypeKind::String) };
+      break;
 
-      case NodeKind::Mod:
-      case NodeKind::LShift:
-      case NodeKind::RShift:
-        if (left.is(TypeKind::Float) || right.is(TypeKind::Float)) goto error_calc;
-        break;
+    case NodeKind::Mod:
+    case NodeKind::LShift:
+    case NodeKind::RShift:
+      if (left.is(TypeKind::Float) || right.is(TypeKind::Float)) goto error_calc;
+      break;
 
-      case NodeKind::Sub:
-      case NodeKind::Div:
-        break;
+    case NodeKind::Sub:
+    case NodeKind::Div:
+      break;
 
-      case NodeKind::Equal:
-        if (!left.equals(right)) goto error_calc;
-        break;
+    case NodeKind::Equal:
+      if (!left.equals(right)) goto error_calc;
+      break;
     }
 
     if (left.is_numeric() && right.is_numeric()) {
-      return TypeInfo(left.is(TypeKind::Float) || right.is(TypeKind::Float) ? TypeKind::Float : TypeKind::Int);
+      return {
+        node,
+        TypeInfo(left.is(TypeKind::Float) || right.is(TypeKind::Float) ? TypeKind::Float : TypeKind::Int)
+      };
     }
 
   error_calc:
-    throw err::use_of_invalid_operator(ex->token, ls, rs);
+    throw err::use_of_invalid_operator(ex->token, left.to_string(), right.to_string());
   }
 
   //
   // eval_typename
   //
-  ExprTypeResult Sema::eval_typename(NdSymbol* node) {
+  ExprType Sema::eval_typename(NdSymbol* node) {
     static constexpr std::pair<char const*, TypeKind> name_kind_pairs[]{
-      {"none", TypeKind::None},         {"int", TypeKind::Int},     {"float", TypeKind::Float},
-      {"bool", TypeKind::Bool},         {"char", TypeKind::Char},   {"string", TypeKind::String},
-      {"vector", TypeKind::Vector},     {"tuple", TypeKind::Tuple}, {"dict", TypeKind::Dict},
-      {"function", TypeKind::Function},
+        {"none", TypeKind::None},         {"int", TypeKind::Int},     {"float", TypeKind::Float},
+        {"bool", TypeKind::Bool},         {"char", TypeKind::Char},   {"string", TypeKind::String},
+        {"vector", TypeKind::Vector},     {"tuple", TypeKind::Tuple}, {"dict", TypeKind::Dict},
+        {"function", TypeKind::Function},
     };
 
-    auto result = ExprTypeResult();
+    ExprType result = ExprType(node);
 
     // 基本型の名前から探す
     for (auto&& [s, k] : name_kind_pairs)
@@ -211,32 +248,40 @@ namespace superman::sema {
           throw err::no_match_template_arguments(node->name, C, N);
 
         // 存在したらユーザー定義型の検索はスキップ
-        goto _Skip_Find_Userdef;
+        return result;
       }
 
-    {
-      auto found = find_symbol(node);
+    auto found = find_symbol(node);
 
-      if (found.empty()) throw err::unknown_type_name(node->name);
+    if (found.empty()) throw err::unknown_type_name(node->name);
 
-      for (size_t i = 0; i < found.count();) {
-        if (!found[i]->is_type_name()) {
-          found.remove(i);
-          continue;
-        }
-        i++;
+    for (size_t i = 0; i < found.count();) {
+      if (!found[i]->is_type_name()) {
+        found.remove(i);
+        continue;
       }
-
-      if (found.count() >= 2) {
-        throw err::ambiguous_symbol_name(node->name);
-      }
-
-      auto Final = found[0];
-      (void)Final;
-
-      todoimpl;
+      i++;
     }
-  _Skip_Find_Userdef:;
+
+    if (found.count() >= 2) {
+      throw err::ambiguous_symbol_name(node->name);
+    }
+
+    auto sym = found[0];
+
+    switch (sym->kind) {
+      case SymbolKind::Class: {
+        result.class_nd = sym->node->as<NdClass>();
+        
+        result.type = TypeKind::Class;
+        result.type.class_node = result.class_nd;
+
+        break;
+      }
+
+      default:
+        throw err::semantics::this_is_not_typename(node->token);
+    }
 
     return result;
   }

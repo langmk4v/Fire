@@ -117,6 +117,19 @@ namespace superman {
       todoimpl;
     }
 
+    //
+    // operator "new"
+    //
+    case NodeKind::New: {
+
+
+
+
+
+
+      todo;
+    }
+
       using Ty = TypeKind;
 
     case NodeKind::Add: {

@@ -88,6 +88,11 @@ namespace superman {
     for (int i = 1; i < argc; i++)
       this->inputs.emplace_back(argv[i]);
 
+    if (inputs.empty()) {
+      std::cout << "no input files." << std::endl;
+      return -1;
+    }
+
     for (auto& source : this->inputs) {
       std::vector<Token> tokens;
 
@@ -105,12 +110,10 @@ namespace superman {
         if (!mod->main_fn) {
           printf("fatal error: function 'main' not defined.\n");
           return -1;
-        }
-        else if (mod->main_fn->args.size() > 0) {
+        } else if (mod->main_fn->args.size() > 0) {
           printf("fatal error: function 'main' cannot have arguments.\n");
           return -1;
-        }
-        else if (mod->main_fn->result_type){
+        } else if (mod->main_fn->result_type) {
           printf("fatal error: result type of 'main' cannot be specified.\n");
           return -1;
         }

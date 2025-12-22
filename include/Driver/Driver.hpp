@@ -2,19 +2,17 @@
 
 #include <vector>
 
-namespace superman {
+namespace fire {
   struct SourceCode;
 
-  class Application {
+  class Driver {
     std::vector<SourceCode> inputs;
 
   public:
-    Application();
+    Driver();
 
-    ~Application();
+    ~Driver();
 
     int main(int argc, char** argv);
-
-  private:
   };
-} // namespace superman
+} // namespace fire

@@ -3,8 +3,10 @@
 #include <cstdint>
 #include "TypeInfo.hpp"
 
-namespace superman {
+namespace fire::vm {
+
   struct ObjNone;
+
   struct Object {
     TypeInfo type;
     int ref_count = 0;
