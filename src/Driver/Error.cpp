@@ -31,24 +31,13 @@ namespace fire::err {
 
     std::string linenum_s = std::to_string(line);
 
-    printf(
-      COL_BOLD "%s: " COL_WHITE "%s\n" COL_DEFAULT
-      COL_LIGHT_GREEN " -> %s:%zu:%zu\n" COL_DEFAULT
-      " %s |\n"
-      " %s | %s\n"
-      " %s |%s^\n\n",
-      
-      tag,
-      msg.c_str(),
-      s.path.c_str(),
-      line,
-      column,
-      std::string(linenum_s.length(), ' ').c_str(),
-      linenum_s.c_str(),
-      s.data.substr(begin, end - begin).c_str(),
-      std::string(linenum_s.length(), ' ').c_str(),
-      string(column, ' ').c_str()
-    );
+    std::cout
+      << COL_BOLD << tag << ": " COL_WHITE << msg << COL_DEFAULT << COL_DEFAULT << std::endl
+      << COL_LIGHT_GREEN << " -> " << s.path << ":" << line << ":" << column << COL_DEFAULT << std::endl
+      << "  " << std::string(linenum_s.length(), ' ') << " |" << std::endl
+      << "  " << linenum_s << " | " << s.data.substr(begin, end - begin) << std::endl
+      << "  " << std::string(linenum_s.length(), ' ') << " |" << std::string(column, ' ') << "^" << std::endl
+      << std::endl;
 
     return this;
   }
