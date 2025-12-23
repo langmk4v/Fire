@@ -116,7 +116,9 @@ namespace fire::parser {
 
     bool is(NodeKind k) const { return kind == k; }
 
-    bool is_expr() const { return kind >= NodeKind::Mul && kind <= NodeKind::LogOr; }
+    bool is_expr() const { return kind >= NodeKind::Mul && kind <= NodeKind::Assign; }
+
+    bool is_expr_full() const { return kind <= NodeKind::Assign; };
 
     virtual ~Node() {}
 

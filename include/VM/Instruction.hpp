@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <string>
+#include <vector>
+#include <cstdint>
 
 namespace fire::parser {
   struct Node;
@@ -17,6 +18,12 @@ namespace fire::vm {
     OP_Ret,
     OP_Vardef,
     OP_Label,
+    OP_StructDef,
+  };
+
+  struct StructDef {
+    std::string name;
+    std::vector<std::string> fields={};
   };
 
   struct Instruction {
@@ -26,7 +33,7 @@ namespace fire::vm {
 
     std::string label = "";
 
-    size_t var_index = 0;
+    std::string var_name = "";
 
     Instruction* addr = nullptr;
 

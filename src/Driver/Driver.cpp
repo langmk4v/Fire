@@ -67,16 +67,17 @@ namespace fire {
         se.analyze_full();
 
         std::vector<vm::Instruction> prg;
+        std::vector<vm::StructDef*> structs;
 
         prg.push_back({ .op = vm::OP_Jmp, .label = "main" });
 
-        auto comp = vm::Compiler(prg);
+        auto comp = vm::Compiler(prg, structs);
 
         comp.compile(mod);
 
-        debug(
-          comp.show_all();
-        )
+      #if _FIRE_DEBUG_
+        comp.show_all();
+      #endif
 
         auto runner = vm::interp::Interp(prg);
 

@@ -27,22 +27,17 @@ namespace fire::vm {
         return "jmpz " + strings::node2s(expr) + ", " + label;
 
       case OP_Ret:
-        return "ret;";
+        return expr ? "ret "+strings::node2s(expr)+";" : "ret;";
 
       case OP_Vardef:
-        if(expr) return "var " + std::to_string(var_index) + ", " + strings::node2s(expr)+";";
-        return strings::format("var %zu;",var_index);
+        if(expr) return "var " + var_name + " = " + strings::node2s(expr)+";";
+        return "var "+var_name+";";
 
       case OP_Label:
-        return label + ":";
+        return label + var_name + ":";
     }
 
     return "nop;";
-  }
-
-  Compiler::Compiler(std::vector<Instruction>& out)
-    : out(out)
-  {
   }
 
   void Compiler::compile(Node* node) {
@@ -60,6 +55,10 @@ namespace fire::vm {
 
       case NodeKind::Class: {
         auto cla = node->as<NdClass>();
+
+        auto st = new StructDef{.name = cla->name.text};
+        for(auto&&f:cla->fields)st->fields.push_back(f->name.text);
+        structs.push_back(st);
 
         for(auto&&me:cla->methods){
           me->name.text=cla->name.text+"::"+me->name.text;
@@ -79,6 +78,16 @@ namespace fire::vm {
         auto func = node->as<NdFunction>();
 
         emit({ .op = OP_Label, .label = func->name.text });
+
+        if(func->args.size()>=1){
+          bool b=func->scope_ptr->as<FunctionScope>()->is_method;
+          out.back().var_name = "("
+            + std::string(b?"self":"")
+            + (b && func->args.size()>=1?", ":"")
+            + strings::join<NdFunction::Argument>(", ",func->args,
+                [](NdFunction::Argument const& a)->std::string{return a.name.text;})
+            + ")";
+        }
 
         compile(func->body);
 
@@ -100,25 +109,36 @@ namespace fire::vm {
 
       case NodeKind::Let: {
         auto const let = node->as<NdLet>();
-        emit({ .op = OP_Vardef, .expr = let->init, .var_index = (size_t)let->index });
+        emit({ .op = OP_Vardef, .expr = let->init, .var_name = let->name.text });
+        break;
+      }
+
+      case NodeKind::Return: {
+        emit({ .op = OP_Ret, .expr = node->as<NdReturn>()->expr });
         break;
       }
 
       default:
+        assert(node->is_expr_full());
         emit({ .op = OP_Do, .expr = node });
         break;
     }
 
   }
 
-debug(
+#if _FIRE_DEBUG_
   void Compiler::show_all() {
+
+    for(auto&&s:structs){
+      std::cout<<"  type "<<s->name<<" { "<<strings::join(", ",s->fields)<<" }"<<std::endl;
+    }
+
     for(auto&&i:out) {
       if(i.op!=OP_Label) std::cout << "  "; else std::cout<<"\n";
       std::cout<<i.to_string()<<std::endl;
     }
   }
-)
+#endif
 
   size_t Compiler::emit(Instruction&& i) {
     out.push_back(std::move(i));

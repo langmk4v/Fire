@@ -26,6 +26,9 @@ namespace fire::strings {
       if (node->token.kind == TokenKind::String) return "\"" + node->token.text + "\"";
       return node->token.text;
 
+    case NodeKind::Self:
+      return "self";
+
     case NodeKind::Symbol: {
       auto x = node->as<NdSymbol>();
       auto s = x->name.text;
@@ -37,6 +40,11 @@ namespace fire::strings {
     case NodeKind::CallFunc: {
       auto x = node->as<NdCallFunc>();
       return node2s(x->callee) + "(" + strings::join(", ", x->args, node2s) + ")";
+    }
+
+    case NodeKind::MemberAccess: {
+      auto x = node->as<NdExpr>();
+      return node2s(x->lhs)+"."+node2s(x->rhs);
     }
 
     case NodeKind::New: {

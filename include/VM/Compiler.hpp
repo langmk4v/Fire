@@ -9,21 +9,28 @@ namespace fire::parser {
 namespace fire::vm {
 
   struct Instruction;
+  struct StructDef;
 
   class Compiler {
 
     std::vector<Instruction>& out;
 
+    std::vector<StructDef*>& structs;
+
     size_t label_index = 0;
 
   public:
-    Compiler(std::vector<Instruction>& out);
+    Compiler(std::vector<Instruction>& out, std::vector<StructDef*>& structs)
+      : out(out),
+        structs(structs)
+    {
+    }
 
     void compile(parser::Node* node);
 
-    debug(
-      void show_all();
-    )
+  #if _FIRE_DEBUG_
+    void show_all();
+  #endif
 
   private:
 

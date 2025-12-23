@@ -196,7 +196,7 @@ namespace fire::sema {
         }
       }
 
-      throw err::semantics::not_field_of_class(right->token,);
+      throw err::semantics::not_field_of_class(right->token,right->name.text,class_node->name.text);
     }
 
     case NodeKind::New: {
