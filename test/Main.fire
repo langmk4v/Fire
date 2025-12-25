@@ -24,13 +24,12 @@ fn compile(path: string) -> bool {
     return false;
 }
 
-fn main(args: string...) -> int {
+fn main(args: Vec<string>) -> int {
     var inputs : Vec<string>;
 
     for arg in args {
         if arg.starts("-") {
             var option = arg[1:];
-            ...
         }
         else {
             inputs.append(arg);

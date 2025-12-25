@@ -192,16 +192,22 @@ namespace fire {
         }
         x = y;
       } else if (eat("[")) {
-
-        auto index = ps_expr();
-
+        // "[:end]"
         if (eat(":")) {
           auto end = ps_expr();
-          index = new NdExpr(NodeKind::Slice, tok, index, end);
-        }
+          x = new NdExpr(NodeKind::Subscript, tok, x, new NdExpr(NodeKind::Slice, tok, nullptr, end));
+          expect("]");
+        } else {
+          auto index = ps_expr();
 
-        x = new NdExpr(NodeKind::Subscript, *op, x, index);
-        expect("]");
+          if (eat(":")) {
+            auto end = look("]") ? nullptr : ps_expr();
+            x = new NdExpr(NodeKind::Subscript, tok, x, new NdExpr(NodeKind::Slice, tok, index, end));
+          } else
+            x = new NdExpr(NodeKind::Subscript, tok, x, index);
+
+          expect("]");
+        }
       } else if (eat(".")) {
         auto right = ps_factor();
 
@@ -466,6 +472,31 @@ namespace fire {
     if (look("{")) return ps_scope();
 
     if (look("var")) return ps_let();
+
+    if (eat("try")) {
+      auto x = new NdTry(tok);
+
+      x->body = ps_scope();
+
+      if (!look("catch")) {
+        throw err::parses::expected_catch_block(*(cur - 1));
+      }
+
+      while (!is_end() && eat("catch")) {
+        auto catch_ = new NdCatch(tok);
+        catch_->name = *expect_ident();
+        expect(":");
+        catch_->error_type = ps_type_name();
+        catch_->body = ps_scope();
+        x->catches.emplace_back(catch_);
+      }
+
+      if (eat("finally")) {
+        x->finally_block = ps_scope();
+      }
+
+      return x;
+    }
 
     if (eat("if")) {
       auto x = new NdIf(tok);
