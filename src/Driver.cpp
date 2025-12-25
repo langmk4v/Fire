@@ -40,16 +40,19 @@ namespace fire {
         if (!mod->main_fn) {
           printf("fatal error: function 'main' not defined.\n");
           return -1;
-        } else if (mod->main_fn->args.size() > 0) {
-          printf("fatal error: function 'main' cannot have arguments.\n");
-          return -1;
-        } else if (mod->main_fn->result_type) {
-          printf("fatal error: result type of 'main' cannot be specified.\n");
+        } else if (!mod->main_fn->result_type) {
+          printf("fatal error: function 'main' must have a return type.\n");
           return -1;
         }
 
         auto se = Sema(mod);
+
         se.analyze_full();
+
+        if (!mod->main_fn->scope_ptr->as<FunctionScope>()->result_type.equals(TypeInfo(TypeKind::Int))) {
+          printf("fatal error: function 'main' must return an int.\n");
+          return -1;
+        }
 
         Compiler::compile_full(IR::from_node(mod));
 

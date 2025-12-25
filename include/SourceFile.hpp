@@ -1,11 +1,14 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace fire {
   struct SourceCode {
     std::string path;
     std::string data;
+
+    std::vector<SourceCode*> imports;
 
     SourceCode(std::string const& _path);
 

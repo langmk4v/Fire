@@ -7,11 +7,12 @@ namespace fire {
     switch (nd->kind) {
     case NodeKind::Value:
       return new IRValue(nd->as<NdValue>()->obj);
+
+    case NodeKind::Module: {
+    }
     }
 
     todo;
-
-    return nullptr;
   }
 
 } // namespace fire

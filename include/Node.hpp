@@ -90,8 +90,6 @@ namespace fire {
 
   struct NdFunction;
 
-  using Token = Token;
-
   //
   // Sema.hpp
   struct ScopeContext;
