@@ -1,3 +1,11 @@
+namespace AAA {
+    class MyClass {
+        var num : int;
+        var str : string;
+
+    }
+}
+
 fn main(args: vector<string>) -> int {
 
     println("Hello, World!");

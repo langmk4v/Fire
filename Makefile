@@ -9,7 +9,7 @@ BUILD_RELEASE	:=	release
 
 BACKUP_FOLDER	:=	$(TOPDIR)/.bak
 
-INCLUDE_DIR		:=	include
+INCLUDE_DIR		:=	include include/types include/classes
 
 SOURCE_DIR		:=	\
 				src \
