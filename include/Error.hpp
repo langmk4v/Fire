@@ -35,6 +35,10 @@ namespace fire {
       invalid_token(Token const& t) : e(t, "invalid token") {}
     };
 
+    struct invalid_character_literal : e {
+      invalid_character_literal(Token const& t) : e(t, "invalid character literal") {}
+    };
+
     struct invalid_syntax : e {
       invalid_syntax(Token const& t) : e(t, "invalid syntax") {}
     };

@@ -13,7 +13,7 @@ namespace fire {
     if (eat("<")) {
       try {
         do {
-          sym->te_args.emplace_back(ps_symbol());
+          sym->te_args.emplace_back(ps_type_name());
         } while (!is_end() && eat(","));
         if (look(">>"))
           cur->text = ">";
@@ -40,6 +40,28 @@ namespace fire {
 
     Token& tok = *cur;
 
+    //
+    // parse syntax suger for tuple type
+    // (T, U, ...) --> tuple<T, U, ...>
+    if (eat("(")) {
+      NdSymbol* tuple_type = new NdSymbol(tok);
+
+      tuple_type->name.kind = TokenKind::Identifier;
+      tuple_type->name.text = "tuple";
+
+      tuple_type->te_args.push_back(ps_type_name());
+
+      expect(",");
+
+      do {
+        tuple_type->te_args.push_back(ps_type_name());
+      } while (!is_end() && eat(","));
+
+      expect(")");
+
+      return tuple_type;
+    }
+
     if (eat("decltype")) {
       expect("(");
       auto x = new NdDeclType(tok, ps_expr());
@@ -57,24 +79,6 @@ namespace fire {
   Node* Parser::ps_factor() {
     auto& tok = *cur;
 
-    if (eat("self")) return new NdSelf(tok);
-
-    if (eat("true")) {
-      auto v = new NdValue(tok);
-      v->obj = new ObjBool(true);
-      return v;
-    }
-
-    if (eat("false")) {
-      auto v = new NdValue(tok);
-      v->obj = new ObjBool(false);
-      return v;
-    }
-
-    if (eat("decltype")) {
-      throw err::parses::cannot_use_decltype_here(tok);
-    }
-
     if (eat("(")) {
       auto node = ps_expr();
 
@@ -84,7 +88,7 @@ namespace fire {
 
         do {
           tu->elems.push_back(ps_expr());
-        } while (eat(","));
+        } while (!is_end() && eat(","));
 
         node = tu;
       }
@@ -107,6 +111,24 @@ namespace fire {
       return node;
     }
 
+    if (eat("self")) return new NdSelf(tok);
+
+    if (eat("true")) {
+      auto v = new NdValue(tok);
+      v->obj = new ObjBool(true);
+      return v;
+    }
+
+    if (eat("false")) {
+      auto v = new NdValue(tok);
+      v->obj = new ObjBool(false);
+      return v;
+    }
+
+    if (eat("decltype")) {
+      throw err::parses::cannot_use_decltype_here(tok);
+    }
+
     if (cur->is(TokenKind::Identifier)) {
       return ps_symbol();
     }
@@ -124,8 +146,18 @@ namespace fire {
       cur++;
       break;
 
+    case TokenKind::Char: {
+      auto s16 = to_utf16(cur->text.substr(1, cur->text.size() - 2));
+      if (s16.empty() || s16.size() > 1) {
+        throw err::invalid_character_literal(*cur);
+      }
+      v->obj = new ObjChar(s16[0]);
+      cur++;
+      break;
+    }
+
     case TokenKind::String:
-      v->obj = new ObjString(to_utf16(cur->text));
+      v->obj = new ObjString(to_utf16(cur->text.substr(1, cur->text.size() - 2)));
       cur++;
       break;
 
@@ -137,7 +169,10 @@ namespace fire {
   }
 
   Node* Parser::ps_subscript() {
+    auto& tok = *cur;
+
     auto x = ps_factor();
+
     while (!is_end()) {
       auto op = cur;
       if (eat("(")) {
@@ -155,7 +190,15 @@ namespace fire {
         }
         x = y;
       } else if (eat("[")) {
-        x = new NdExpr(NodeKind::Subscript, *op, x, ps_expr());
+
+        auto index = ps_expr();
+
+        if (eat(":")) {
+          auto end = ps_expr();
+          index = new NdExpr(NodeKind::Slice, tok, index, end);
+        }
+
+        x = new NdExpr(NodeKind::Subscript, *op, x, index);
         expect("]");
       } else if (eat(".")) {
         auto right = ps_factor();
@@ -174,11 +217,27 @@ namespace fire {
       } else
         break;
     }
+
+    if (eat("++")) {
+      return new NdInclement(tok, x, false);
+    }
+    if (eat("--")) {
+      return new NdDeclement(tok, x, false);
+    }
+
     return x;
   }
 
   Node* Parser::ps_unary() {
     auto& tok = *cur;
+
+    if (eat("++")) {
+      return new NdInclement(tok, ps_subscript(), true);
+    }
+
+    if (eat("--")) {
+      return new NdDeclement(tok, ps_subscript(), true);
+    }
 
     if (eat("new")) {
       auto node = new NdNew(tok);
@@ -227,6 +286,7 @@ namespace fire {
     }
 
     eat("+");
+
     return ps_subscript();
   }
 
@@ -378,11 +438,24 @@ namespace fire {
 
   NdLet* Parser::ps_let(bool expect_semi) {
     auto& tok = *expect("var");
-    auto x = new NdLet(tok, *expect_ident());
-    if (eat(":")) x->type = ps_type_name();
-    if (eat("=")) x->init = ps_expr();
+
+    NdLet* let = new NdLet(tok, *cur);
+
+    let->is_static = eat("static");
+
+    if (eat("(")) {
+      do {
+        let->placeholders.push_back(expect_ident());
+      } while (!is_end() && eat(","));
+      expect(")");
+    } else
+      expect_ident();
+
+    if (eat(":")) let->type = ps_type_name();
+    if (eat("=")) let->init = ps_expr();
     if (expect_semi) expect(";");
-    return x;
+
+    return let;
   }
 
   Node* Parser::ps_stmt() {
@@ -405,6 +478,15 @@ namespace fire {
       auto x = new NdWhile(tok);
       if (look("var")) x->vardef = ps_let(false);
       if (!x->vardef || eat(";")) x->cond = ps_expr();
+      x->body = ps_scope();
+      return x;
+    }
+
+    if (eat("for")) {
+      auto x = new NdFor(tok);
+      x->iter = *expect_ident();
+      expect("in");
+      x->iterable = ps_expr();
       x->body = ps_scope();
       return x;
     }
@@ -561,7 +643,7 @@ namespace fire {
     throw err::expected_item_of_module(*cur);
   }
 
-  void Parser::ps_import(NdModule* mod) {
+  void Parser::ps_import() {
 
     auto import_token = cur;
 
@@ -602,7 +684,7 @@ namespace fire {
     NdModule* mod = new NdModule(*cur);
 
     while (!is_end() && eat("import")) {
-      ps_import(mod);
+      ps_import();
     }
 
     for (auto&& src : source.imports) {

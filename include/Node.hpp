@@ -24,16 +24,19 @@ namespace fire {
     Array,
     Tuple,
 
-    Subscript,    // a[b]
+    Slice,
+    Subscript, // a[b]
+
     MemberAccess, // a.b
     CallFunc,     // a(...)
 
-    PreInclement, // ++a
-    PreDeclement, // --a
-    BitNot,       // ~
-    Not,          // !
-    Plus,         // +a
-    Minus,        // -a
+    Inclement, // ++a or a++
+    Declement, // --a or a--
+
+    BitNot, // ~
+    Not,    // !
+    Plus,   // +a
+    Minus,  // -a
 
     Ref,   // &a
     Deref, // *a
@@ -151,7 +154,7 @@ namespace fire {
   // NdSymbol
   //
   struct NdSymbol : Node {
-    Token& name;
+    Token name;
 
     NdDeclType* dec = nullptr;
 
@@ -181,34 +184,6 @@ namespace fire {
 
   struct NdSelf : Node {
     NdSelf(Token& t) : Node(NodeKind::Self, t) {}
-  };
-
-  struct NdNew : Node {
-    NdSymbol* type;
-    std::vector<Node*> args;
-    NdNew(Token& tok) : Node(NodeKind::New, tok) {}
-  };
-
-  struct NdRef : Node {
-    Node* expr = nullptr;
-    NdRef(Token& tok) : Node(NodeKind::Ref, tok) {}
-  };
-
-  struct NdDeref : Node {
-    Node* expr = nullptr;
-    NdDeref(Token& tok) : Node(NodeKind::Deref, tok) {}
-  };
-
-  // !a
-  struct NdNot : Node {
-    Node* expr = nullptr;
-    NdNot(Token& tok) : Node(NodeKind::Not, tok) {}
-  };
-
-  // ~a
-  struct NdBitNot : Node {
-    Node* expr = nullptr;
-    NdBitNot(Token& tok) : Node(NodeKind::BitNot, tok) {}
   };
 
   struct NdArray : Node {
@@ -241,6 +216,48 @@ namespace fire {
     NdCallFunc(Node* callee, Token& tok) : Node(NodeKind::CallFunc, tok), callee(callee) {}
   };
 
+  struct NdInclement : Node {
+    Node* expr = nullptr;
+    bool is_postfix = false; // true: ++a, false: a++
+    NdInclement(Token& tok, Node* expr, bool is_postfix)
+        : Node(NodeKind::Inclement, tok), expr(expr), is_postfix(is_postfix) {}
+  };
+
+  struct NdDeclement : Node {
+    Node* expr = nullptr;
+    bool is_postfix = false; // true: --a, false: a--
+    NdDeclement(Token& tok, Node* expr, bool is_postfix)
+        : Node(NodeKind::Declement, tok), expr(expr), is_postfix(is_postfix) {}
+  };
+
+  struct NdNew : Node {
+    NdSymbol* type;
+    std::vector<Node*> args;
+    NdNew(Token& tok) : Node(NodeKind::New, tok) {}
+  };
+
+  struct NdRef : Node {
+    Node* expr = nullptr;
+    NdRef(Token& tok) : Node(NodeKind::Ref, tok) {}
+  };
+
+  struct NdDeref : Node {
+    Node* expr = nullptr;
+    NdDeref(Token& tok) : Node(NodeKind::Deref, tok) {}
+  };
+
+  // !a
+  struct NdNot : Node {
+    Node* expr = nullptr;
+    NdNot(Token& tok) : Node(NodeKind::Not, tok) {}
+  };
+
+  // ~a
+  struct NdBitNot : Node {
+    Node* expr = nullptr;
+    NdBitNot(Token& tok) : Node(NodeKind::BitNot, tok) {}
+  };
+
   struct NdExpr : Node {
     Node* lhs;
     Node* rhs;
@@ -249,6 +266,10 @@ namespace fire {
 
   struct NdLet : Node {
     Token& name;
+
+    bool is_static = false;
+
+    std::vector<Token*> placeholders; // when unpacking tuple.
 
     NdSymbol* type = nullptr;
     Node* init = nullptr;
@@ -262,6 +283,8 @@ namespace fire {
     NdLet(Token& t, Token& name) : Node(NodeKind::Let, t), name(name) {}
   };
 
+  struct NdScope;
+
   struct NdIf : Node {
     NdLet* vardef = nullptr;
     Node* cond = nullptr;
@@ -270,7 +293,13 @@ namespace fire {
     NdIf(Token& t) : Node(NodeKind::If, t) {}
   };
 
-  struct NdScope;
+  struct NdFor : Node {
+    Token iter;
+    Node* iterable = nullptr;
+    NdScope* body = nullptr;
+    NdFor(Token& t) : Node(NodeKind::For, t) {}
+  };
+
   struct NdWhile : Node {
     NdLet* vardef = nullptr;
     Node* cond = nullptr;

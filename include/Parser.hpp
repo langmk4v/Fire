@@ -62,7 +62,7 @@ namespace fire {
     Node* ps_mod_item();
     NdModule* ps_mod();
 
-    void ps_import(NdModule* mod);
+    void ps_import();
 
     NdModule* parse();
 

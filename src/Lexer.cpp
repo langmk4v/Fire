@@ -98,7 +98,7 @@ namespace fire {
       kind = c == '"' ? TokenKind::String : TokenKind::Char;
       _pos++;
       char x;
-      std::string ss;
+      std::string ss = std::string(1, c);
       while (!is_end() && (x = peek()) != c) {
         if (x == '\\') {
           _pos++;
@@ -132,7 +132,7 @@ namespace fire {
       }
       _pos++;
       pass_space();
-      return Token(kind, ss, &_source, pos);
+      return Token(kind, ss + c, &_source, pos);
     }
 
     // punctuator

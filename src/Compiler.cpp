@@ -37,6 +37,12 @@ namespace fire {
     comp.compile(ir);
   }
 
-  void Compiler::compile(IR* ir) { todo; }
+  void Compiler::compile(IR* ir) {
+    (void)ir;
+    (void)out;
+    (void)label_index;
+
+    todo;
+  }
 
 } // namespace fire
