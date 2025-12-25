@@ -1,6 +1,7 @@
 #include <filesystem>
 
 #include "Utils.hpp"
+#include "Driver.hpp"
 #include "Parser.hpp"
 #include "Error.hpp"
 
@@ -608,7 +609,69 @@ namespace fire {
     return node;
   }
 
-  NdEnum* Parser::ps_enum() { todoimpl; }
+  NdEnumeratorDef* Parser::ps_enumerator_def() {
+    Token* tok = expect_ident();
+
+    NdEnumeratorDef* nd = new NdEnumeratorDef(*tok);
+
+    nd->name = *tok;
+
+    if (eat("(")) {
+      if (cur->kind == TokenKind::Identifier && (cur + 1)->text == ":") {
+        nd->is_struct_fields = true;
+        do {
+          Token* mb_name = expect_ident();
+          expect(":");
+          nd->multiple.emplace_back(new NdKeyValuePair(*mb_name, new NdSymbol(*mb_name), ps_type_name()));
+        } while (!is_end() && eat(","));
+        expect(")");
+        return nd;
+      }
+
+      auto type = ps_type_name();
+
+      if (eat(",")) {
+        nd->is_type_names = true;
+        nd->multiple.push_back(type);
+        do {
+          nd->multiple.emplace_back(ps_type_name());
+        } while (!is_end() && eat(","));
+        expect(")");
+        return nd;
+      }
+
+      nd->is_one_type = true;
+      nd->variant_type = type;
+      expect(")");
+      return nd;
+    }
+
+    nd->is_no_variants = true;
+    return nd;
+  }
+
+  NdEnum* Parser::ps_enum() {
+
+    Token* tok = expect("enum");
+
+    NdEnum* nd = new NdEnum(*tok);
+
+    nd->name = *expect_ident();
+
+    expect("{");
+
+    if (eat("}")) {
+      throw err::empty_class_or_enum_is_not_valid(*tok);
+    }
+
+    do {
+      nd->enumerators.emplace_back(ps_enumerator_def());
+    } while (!is_end() && eat(","));
+
+    expect("}");
+
+    return nd;
+  }
 
   NdNamespace* Parser::ps_namespace() {
     Token* tok = expect("namespace");
@@ -643,6 +706,24 @@ namespace fire {
     throw err::expected_item_of_module(*cur);
   }
 
+  void Parser::ps_do_import(Token* import_token, std::string path) {
+    if (!std::filesystem::exists(path)) {
+      if (std::filesystem::exists(path + ".fire")) {
+        path += ".fire";
+
+        auto imported = source.import(path);
+
+        if (imported->get_depth() >= 4) {
+          throw err::parses::import_depth_limit_exceeded(*import_token, imported->path);
+        }
+      } else {
+        throw err::parses::cannot_open_file(*import_token, path);
+      }
+    } else if (std::filesystem::is_directory(path)) {
+      source.import_directory(path);
+    }
+  }
+
   void Parser::ps_import() {
 
     auto import_token = cur;
@@ -663,20 +744,12 @@ namespace fire {
 
     path = std::filesystem::absolute(source.get_folder() + path).string();
 
-    if (!std::filesystem::exists(path)) {
-      if (std::filesystem::exists(path + ".fire")) {
-        path += ".fire";
+    try {
+      ps_do_import(import_token, path);
+    } catch (err::parses::cannot_open_file e) {
+      std::string root = Driver::get_instance()->get_first_cwd();
 
-        auto imported = source.import(path);
-
-        if (imported->get_depth() >= 4) {
-          throw err::parses::import_depth_limit_exceeded(*import_token, imported->path);
-        }
-      } else {
-        throw err::parses::cannot_open_file(*import_token, path);
-      }
-    } else if (std::filesystem::is_directory(path)) {
-      source.import_directory(path);
+      // find in root directory
     }
   }
 

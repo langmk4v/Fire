@@ -95,6 +95,7 @@ namespace fire {
     Class,
 
     Enum,
+    EnumeratorDef,
 
     Namespace,
 
@@ -353,7 +354,22 @@ namespace fire {
     NdFunction(Token& t, Token& name) : NdTemplatableBase(NodeKind::Function, t), name(name) {}
   };
 
+  struct __attribute__((packed)) NdEnumeratorDef : Node {
+    Token name;
+    NdSymbol* variant_type = nullptr;
+    std::vector<Node*> multiple;
+
+    bool is_no_variants : 1 = false;   // Kind
+    bool is_one_type : 1 = false;      // Kind(T)
+    bool is_type_names : 1 = false;    // Kind(T, U, ...)  -->  multiple< NdSymbol >
+    bool is_struct_fields : 1 = false; // Kind(a: T, ...)  -->  multiple< NdKeyValuePair >
+
+    NdEnumeratorDef(Token& t) : Node(NodeKind::EnumeratorDef, t) {}
+  };
+
   struct NdEnum : Node {
+    Token name;
+    std::vector<NdEnumeratorDef*> enumerators;
     NdEnum(Token& t) : Node(NodeKind::Enum, t) {}
   };
 
