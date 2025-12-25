@@ -606,7 +606,12 @@ namespace fire {
       auto public_flag = eat("pub");
 
       // method
-      if (look("fn")) node->methods.emplace_back(ps_function(true))->is_pub = public_flag;
+      if (look("fn")) {
+      auto M=  node->methods.emplace_back(ps_function(true));
+      
+      M->is_pub = public_flag;
+      M->take_self=true;
+      }
 
       // field
       else if (look("var"))
@@ -834,42 +839,42 @@ namespace fire {
     return mod;
   }
 
-  void Parser::fix_namespace_duplications(std::vector<Node*>& items) {
-    bool flag=false;
+  void Parser::merge_namespaces(std::vector<Node*>& items) {
+    bool flag = false;
 
   __begin__:;
-    flag=false;
-    for(size_t i=0;i<items.size();){
-      if(auto orig = items[i]->as<NdNamespace>();orig->is(NodeKind::Namespace)){
-        for(size_t j=i+1;j<items.size();j++){
-          if(auto dup=items[j]->as<NdNamespace>();dup->is(NodeKind::Namespace)&&dup->name==orig->name){
-            for(auto x:dup->items)
+    flag = false;
+    for (size_t i = 0; i < items.size();) {
+      if (auto orig = items[i]->as<NdNamespace>(); orig->is(NodeKind::Namespace)) {
+        for (size_t j = i + 1; j < items.size(); j++) {
+          if (auto dup = items[j]->as<NdNamespace>();
+              dup->is(NodeKind::Namespace) && dup->name == orig->name) {
+            for (auto x : dup->items)
               orig->items.push_back(x);
             delete dup;
-            items.erase(items.begin()+j);
-            flag=true;
+            items.erase(items.begin() + j);
+            flag = true;
             goto __merged;
           }
         }
         i++;
-        __merged:;
-      }
-      else {
+      __merged:;
+      } else {
         i++;
       }
     }
 
-    if(flag) goto __begin__;
+    if (flag) goto __begin__;
 
-    for(auto&& x:items){
-      if(x->is(NodeKind::Namespace)) fix_namespace_duplications(x->as<NdNamespace>()->items);
+    for (auto&& x : items) {
+      if (x->is(NodeKind::Namespace)) merge_namespaces(x->as<NdNamespace>()->items);
     }
   }
 
   NdModule* Parser::parse() {
     auto mod = ps_mod();
 
-    fix_namespace_duplications(mod->items);
+    merge_namespaces(mod->items);
 
     return mod;
   }

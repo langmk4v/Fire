@@ -68,7 +68,7 @@ namespace fire {
 
     void ps_import();
 
-    void fix_namespace_duplications(std::vector<Node*>& items);
+    void merge_namespaces(std::vector<Node*>& items);
 
     NdModule* parse();
 

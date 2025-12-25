@@ -53,7 +53,13 @@ namespace fire {
 
         Sema::analyze_all(mod);
 
-        // if (!mod->main_fn->scope_ptr->as<FunctionScope>()->result_type.equals(TypeInfo(TypeKind::Int))) {
+#ifdef _FIRE_DEBUG_
+        std::cout << node2s(mod) << std::endl;
+#endif
+
+        // if
+        // (!mod->main_fn->scope_ptr->as<FunctionScope>()->result_type.equals(TypeInfo(TypeKind::Int)))
+        // {
         //   printf("fatal error: function 'main' must return an int.\n");
         //   return -1;
         // }
