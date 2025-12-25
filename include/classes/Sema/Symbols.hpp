@@ -27,6 +27,7 @@ namespace fire {
     SymbolKind kind = SymbolKind::Unknown;
     TypeInfo type = {};
     Node* node = nullptr;
+    Token* token = nullptr;
     VariableInfo* var_info = nullptr;
     Scope* scope = nullptr;
   };

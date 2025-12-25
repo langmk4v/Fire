@@ -3,25 +3,25 @@ import Parser;
 import Sema;
 import Compiler;
 
-using firec;
+namespace firec {
+    fn compile(path: string) -> bool {
+        try {
+            var tokens = Lexer::new(SourceFile::open(path)).lex();
 
-fn compile(path: string) -> bool {
-    try {
-        var tokens = Lexer::new(SourceFile::open(path)).lex();
+            var node = Parser::new(tokens).parse_all();
 
-        var node = Parser::new(tokens).parse_all();
+            Sema::analyze(node);
 
-        Sema::analyze(node);
+            Compiler::compile_full(IR::from(Node::lowering(node)));
 
-        Compiler::compile_full(IR::from(Node::lowering(node)));
+            return true;
+        }
+        catch e: FireError {
+            e.print();
+        }
 
-        return true;
+        return false;
     }
-    catch e: FireError {
-        e.print();
-    }
-
-    return false;
 }
 
 fn main(args: Vec<string>) -> int {
@@ -37,7 +37,7 @@ fn main(args: Vec<string>) -> int {
     }
 
     for input in inputs {
-        compile(input);
+        firec::compile(input);
     }
 
     return 0;

@@ -1,5 +1,3 @@
-import std::IO::FileSystem;
-
 namespace firec {
     class SourceFile {
         var path: string;

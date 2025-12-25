@@ -191,14 +191,16 @@ namespace fire {
         // "[:end]"
         if (eat(":")) {
           auto end = ps_expr();
-          x = new NdExpr(NodeKind::Subscript, tok, x, new NdExpr(NodeKind::Slice, tok, nullptr, end));
+          x = new NdExpr(NodeKind::Subscript, tok, x,
+                         new NdExpr(NodeKind::Slice, tok, nullptr, end));
           expect("]");
         } else {
           auto index = ps_expr();
 
           if (eat(":")) {
             auto end = look("]") ? nullptr : ps_expr();
-            x = new NdExpr(NodeKind::Subscript, tok, x, new NdExpr(NodeKind::Slice, tok, index, end));
+            x = new NdExpr(NodeKind::Subscript, tok, x,
+                           new NdExpr(NodeKind::Slice, tok, index, end));
           } else
             x = new NdExpr(NodeKind::Subscript, tok, x, index);
 
@@ -206,6 +208,11 @@ namespace fire {
         }
       } else if (eat(".")) {
         auto right = ps_factor();
+
+        if (right->kind == NodeKind::Value && right->token.kind == TokenKind::Int) {
+          x = new NdGetTupleElement(tok, x, std::stoll(right->token.text));
+          break;
+        }
 
         if (auto rr = right->as<NdCallFunc>(); right->is(NodeKind::CallFunc)) {
           rr->is_method_call = true;
@@ -350,7 +357,8 @@ namespace fire {
       if (eat("=="))
         x = new NdExpr(NodeKind::Equal, *op, x, ps_compare());
       else if (eat("!="))
-        x = new NdExpr(NodeKind::Not, *op, new NdExpr(NodeKind::Equal, *op, x, ps_compare()), nullptr);
+        x = new NdExpr(NodeKind::Not, *op, new NdExpr(NodeKind::Equal, *op, x, ps_compare()),
+                       nullptr);
       else
         break;
     }
@@ -423,6 +431,17 @@ namespace fire {
 
     if (eat("=")) x = new NdExpr(NodeKind::Assign, *op, x, ps_assign());
 
+    if (eat("+=")) x = new NdAssignWithOp(NodeKind::Add, *op, x, ps_assign());
+    if (eat("-=")) x = new NdAssignWithOp(NodeKind::Sub, *op, x, ps_assign());
+    if (eat("*=")) x = new NdAssignWithOp(NodeKind::Mul, *op, x, ps_assign());
+    if (eat("/=")) x = new NdAssignWithOp(NodeKind::Div, *op, x, ps_assign());
+    if (eat("%=")) x = new NdAssignWithOp(NodeKind::Mod, *op, x, ps_assign());
+    if (eat("&=")) x = new NdAssignWithOp(NodeKind::BitAnd, *op, x, ps_assign());
+    if (eat("|=")) x = new NdAssignWithOp(NodeKind::BitOr, *op, x, ps_assign());
+    if (eat("^=")) x = new NdAssignWithOp(NodeKind::BitXor, *op, x, ps_assign());
+    if (eat("<<=")) x = new NdAssignWithOp(NodeKind::LShift, *op, x, ps_assign());
+    if (eat(">>=")) x = new NdAssignWithOp(NodeKind::RShift, *op, x, ps_assign());
+
     return x;
   }
 
@@ -468,7 +487,7 @@ namespace fire {
 
       while (!is_end() && eat("catch")) {
         auto catch_ = new NdCatch(tok);
-        catch_->name = *expect_ident();
+        catch_->holder = *expect_ident();
         expect(":");
         catch_->error_type = ps_type_name();
         catch_->body = ps_scope();
@@ -634,7 +653,8 @@ namespace fire {
         do {
           Token* mb_name = expect_ident();
           expect(":");
-          nd->multiple.emplace_back(new NdKeyValuePair(*mb_name, new NdSymbol(*mb_name), ps_type_name()));
+          nd->multiple.emplace_back(
+              new NdKeyValuePair(*mb_name, new NdSymbol(*mb_name), ps_type_name()));
         } while (!is_end() && eat(","));
         expect(")");
         return nd;

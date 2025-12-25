@@ -38,6 +38,8 @@ namespace fire {
   };
 
   struct NdVisitorContext {
+    Node* node = nullptr;
+
     Scope* cur_scope = nullptr;
 
     SCFunction* cur_func = nullptr;
@@ -48,7 +50,7 @@ namespace fire {
   struct SymbolFindResult {
     NdSymbol* node = nullptr;
     NdSymbol* previous = nullptr; // "a" of "a::b"
-    std::vector<Symbol*> hits;
+    std::vector<Symbol*> hits = {};
   };
 
   class Sema {
@@ -64,13 +66,15 @@ namespace fire {
 
     Scope* create_scope(Node* node, Scope* parent);
 
-    void resolve_names(Node* node, NdVisitorContext ctx);
+    NdVisitorContext resolve_names(Node* node, NdVisitorContext ctx);
 
     void infer_types(Node* node);
 
     void check_semantics(Node* node);
 
     Symbol* new_variable_symbol(NdLet* let);
+
+    Symbol* new_variable_symbol(Token* tok, std::string const& name);
 
   private:
     TypeInfo eval_expr_ty(Node* node, NdVisitorContext ctx);

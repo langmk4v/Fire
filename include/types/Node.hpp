@@ -30,6 +30,8 @@ namespace fire {
     MemberAccess, // a.b
     CallFunc,     // a(...)
 
+    GetTupleElement, // a.0, a.1, ...
+
     Inclement, // ++a or a++
     Declement, // --a or a--
 
@@ -66,6 +68,8 @@ namespace fire {
     LogOr,
 
     Assign,
+
+    AssignWithOp, // +=, -=, ...
 
     // stmt ::= scope | if | for | break | continue | return
     //          | (expr ";")
@@ -153,7 +157,8 @@ namespace fire {
   struct NdKeyValuePair : Node {
     Node* key;
     Node* value;
-    NdKeyValuePair(Token& t, Node* key, Node* value) : Node(NodeKind::KeyValuePair, t), key(key), value(value) {
+    NdKeyValuePair(Token& t, Node* key, Node* value)
+        : Node(NodeKind::KeyValuePair, t), key(key), value(value) {
     }
   };
 
@@ -251,6 +256,14 @@ namespace fire {
     }
   };
 
+  struct NdGetTupleElement : Node {
+    Node* expr;
+    int index;
+    NdGetTupleElement(Token& tok, Node* expr, int index)
+        : Node(NodeKind::GetTupleElement, tok), expr(expr), index(index) {
+    }
+  };
+
   struct NdInclement : Node {
     Node* expr = nullptr;
     bool is_postfix = false; // true: ++a, false: a++
@@ -300,6 +313,15 @@ namespace fire {
     }
   };
 
+  struct NdAssignWithOp : Node {
+    NodeKind opkind;
+    Node* lhs = nullptr;
+    Node* rhs = nullptr;
+    NdAssignWithOp(NodeKind opkind, Token& op, Node* l, Node* r)
+        : Node(NodeKind::AssignWithOp, op), opkind(opkind), lhs(l), rhs(r) {
+    }
+  };
+
   struct NdExpr : Node {
     Node* lhs;
     Node* rhs;
@@ -330,7 +352,7 @@ namespace fire {
   struct NdScope;
 
   struct NdCatch : Node {
-    Token name;
+    Token holder;
     NdSymbol* error_type = nullptr;
     NdScope* body = nullptr;
     NdCatch(Token& t) : Node(NodeKind::Catch, t) {

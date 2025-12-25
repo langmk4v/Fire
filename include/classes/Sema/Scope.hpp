@@ -7,6 +7,10 @@ namespace fire {
 
   enum class ScopeKind {
     Scope,
+    Try,
+    Catch,
+    If,
+    For,
     Func,
     Enum,
     Class,
@@ -43,6 +47,40 @@ namespace fire {
     }
   };
 
+  struct SCIf : Scope {
+    Symbol* var = nullptr;
+    SCScope* then_scope = nullptr;
+    SCScope* else_scope = nullptr;
+
+    SCIf(NdIf* node, Scope* parent) : Scope(ScopeKind::If, node, parent) {
+    }
+  };
+
+  struct SCFor : Scope {
+    Symbol* iter_name = nullptr;
+    SCScope* body = nullptr;
+
+    SCFor(NdFor* node, Scope* parent) : Scope(ScopeKind::For, node, parent) {
+    }
+  };
+
+  struct SCCatch : Scope {
+    Symbol* holder_name = nullptr;
+    SCScope* body = nullptr;
+
+    SCCatch(NdCatch* node, Scope* parent) : Scope(ScopeKind::Catch, node, parent) {
+    }
+  };
+
+  struct SCTry : Scope {
+    SCScope* body = nullptr;
+    std::vector<SCCatch*> catches;
+    SCScope* finally_scope = nullptr;
+
+    SCTry(NdTry* node, Scope* parent) : Scope(ScopeKind::Try, node, parent) {
+    }
+  };
+
   struct SCFunction : Scope {
     SymbolTable arguments;
     SCScope* body = nullptr;
@@ -74,11 +112,16 @@ namespace fire {
 
     SymbolTable* get_table(NodeKind kind) {
       switch (kind) {
-        case NodeKind::Let: return &variables;
-        case NodeKind::Function: return &functions;
-        case NodeKind::Enum: return &enums;
-        case NodeKind::Class: return &classes;
-        case NodeKind::Namespace: return &namespaces;
+        case NodeKind::Let:
+          return &variables;
+        case NodeKind::Function:
+          return &functions;
+        case NodeKind::Enum:
+          return &enums;
+        case NodeKind::Class:
+          return &classes;
+        case NodeKind::Namespace:
+          return &namespaces;
       }
       todo;
     }
@@ -96,11 +139,16 @@ namespace fire {
 
     SymbolTable* get_table(NodeKind kind) {
       switch (kind) {
-        case NodeKind::Let: return &variables;
-        case NodeKind::Function: return &functions;
-        case NodeKind::Enum: return &enums;
-        case NodeKind::Class: return &classes;
-        case NodeKind::Namespace: return &namespaces;
+        case NodeKind::Let:
+          return &variables;
+        case NodeKind::Function:
+          return &functions;
+        case NodeKind::Enum:
+          return &enums;
+        case NodeKind::Class:
+          return &classes;
+        case NodeKind::Namespace:
+          return &namespaces;
       }
       todo;
     }
