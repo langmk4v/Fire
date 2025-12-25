@@ -45,6 +45,12 @@ namespace fire {
     TypeInfo* expected_type = nullptr;
   };
 
+  struct SymbolFindResult {
+    NdSymbol* node = nullptr;
+    NdSymbol* previous = nullptr; // "a" of "a::b"
+    std::vector<Symbol*> hits;
+  };
+
   class Sema {
 
     SCModule* root_scope = nullptr;
@@ -71,7 +77,7 @@ namespace fire {
 
     TypeInfo eval_typename_ty(NdSymbol* node, NdVisitorContext ctx);
 
-    Symbol* find_symbol(NdSymbol* node, NdVisitorContext ctx);
+    SymbolFindResult find_symbol(NdSymbol* node, NdVisitorContext ctx);
   };
 
 } // namespace fire

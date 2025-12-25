@@ -27,7 +27,10 @@ namespace fire {
       }
     }
 
-    if (eat("::")) sym->next = ps_symbol();
+    if (Token* tok = cur; eat("::")) {
+      sym->scope_resol_tok = tok;
+      sym->next = ps_symbol();
+    }
 
     if (as_typename) {
       if (eat(":")) sym->concept_nd = ps_type_name();

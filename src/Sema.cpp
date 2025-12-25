@@ -41,6 +41,13 @@ namespace fire {
         };
 
         for (auto& item : mod->items) {
+
+          if (item->is(NodeKind::Let)) {
+            auto s = mod_scope->variables.append(new_variable_symbol(item->as<NdLet>()));
+            mod_scope->symtable.append(s);
+            continue;
+          }
+
           auto scope = create_scope(item, mod_scope);
 
           mod_scope->symtable.append(&scope->symbol);
@@ -65,6 +72,13 @@ namespace fire {
         };
 
         for (auto& item : ns->items) {
+
+          if (item->is(NodeKind::Let)) {
+            auto s = ns_scope->variables.append(new_variable_symbol(item->as<NdLet>()));
+            ns_scope->symtable.append(s);
+            continue;
+          }
+
           auto scope = create_scope(item, ns_scope);
 
           ns_scope->symtable.append(&scope->symbol);
@@ -141,6 +155,8 @@ namespace fire {
           arg_symbol->name = arg.name.text;
           arg_symbol->kind = SymbolKind::Var;
           arg_symbol->node = &arg;
+
+          fn_scope->symtable.append(arg_symbol);
           fn_scope->arguments.append(arg_symbol);
         }
 
@@ -158,7 +174,8 @@ namespace fire {
         for (auto& item : sc->items) {
           switch (item->kind) {
             case NodeKind::Let: {
-              scope->variables.append(new_variable_symbol(item->as<NdLet>()));
+              auto s = scope->variables.append(new_variable_symbol(item->as<NdLet>()));
+              scope->symtable.append(s);
               break;
             }
             case NodeKind::Scope: {
@@ -184,15 +201,48 @@ namespace fire {
       case NodeKind::Symbol: {
         auto sym = node->as<NdSymbol>();
 
-        sym->symbol_ptr = find_symbol(sym, ctx);
+        auto result = find_symbol(sym, ctx);
 
-        if (!sym->symbol_ptr) { throw err::use_of_undefined_symbol(sym->token); }
+        if (result.hits.empty()) {
+          if (result.previous)
+            throw err::use_of_undefined_symbol(sym->token, result.previous->name.text,
+                                               result.node->name.text);
+
+          throw err::use_of_undefined_symbol(sym->token);
+        }
+
+        if (result.hits.size() >= 2) { throw err::ambiguous_symbol_name(sym->token); }
+
+        sym->symbol_ptr = result.hits[0];
 
         break;
       }
 
       case NodeKind::Scope: {
         auto sc = node->as<NdScope>();
+
+        for (auto& item : sc->items)
+          resolve_names(item, {.cur_scope = sc->scope_ptr});
+
+        break;
+      }
+
+      case NodeKind::Function: {
+        auto fn = node->as<NdFunction>();
+        auto fn_scope = fn->scope_ptr->as<SCFunction>();
+
+        resolve_names(fn->body, {.cur_scope = fn_scope->body, .cur_func = fn_scope});
+
+        break;
+      }
+
+      case NodeKind::Module: {
+        auto mod = node->as<NdModule>();
+
+        for (auto& item : mod->items)
+          resolve_names(item, {.cur_scope = item->scope_ptr});
+
+        break;
       }
     }
   }
@@ -230,10 +280,43 @@ namespace fire {
     todo;
   }
 
-  Symbol* Sema::find_symbol(NdSymbol* node, NdVisitorContext ctx) {
+  SymbolFindResult Sema::find_symbol(NdSymbol* node, NdVisitorContext ctx) {
     (void)node;
     (void)ctx;
-    todo;
+
+    SymbolFindResult result = {.node = node};
+
+    for (auto scope = ctx.cur_scope; scope; scope = scope->parent) {
+      for (auto& symbol : scope->symtable.symbols) {
+        if (symbol->name == node->name.text) {
+          result.hits.push_back(symbol);
+          break;
+        }
+      }
+    }
+
+    if (result.hits.empty()) return result;
+
+    if (node->next) {
+
+      if (result.hits.size() >= 2) { throw err::ambiguous_symbol_name(node->token); }
+
+      ctx.cur_scope = result.hits[0]->scope;
+
+      switch (ctx.cur_scope->kind) {
+        case ScopeKind::Namespace:
+        case ScopeKind::Class:
+        case ScopeKind::Enum: {
+          result = find_symbol(node->next, ctx);
+          result.previous = node;
+          return result;
+        }
+      }
+
+      throw err::invalid_scope_resolution(*node->scope_resol_tok);
+    }
+
+    return result;
   }
 
 } // namespace fire

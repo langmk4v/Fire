@@ -13,6 +13,7 @@ namespace fire {
     Var,
     Func,
     Enum,
+    Enumerator,
     Class,
     Namespace,
     Module,

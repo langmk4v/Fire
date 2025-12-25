@@ -1,16 +1,13 @@
-namespace AAA {
-    class MyClass {
-        var num : int;
-        var str : string;
-
+namespace AA {
+    namespace a {
+        var x = 2;
     }
 }
 
 fn main(args: vector<string>) -> int {
+    var v = 10;
 
-    var x = AAA::MyClass(num: 123, str: "unchi");
+    v;
 
-    println("Hello, World!");
-
-    return 0;
+    AA::a::x;
 }

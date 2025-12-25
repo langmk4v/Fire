@@ -178,7 +178,9 @@ namespace fire {
     NdDeclType* dec = nullptr;
 
     std::vector<NdSymbol*> te_args; // template-arguments
-    NdSymbol* next = nullptr;       // scope-resolution
+
+    Token* scope_resol_tok = nullptr;
+    NdSymbol* next = nullptr; // scope-resolution
 
     Node* sym_target = nullptr;
 
