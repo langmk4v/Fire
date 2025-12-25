@@ -4,13 +4,29 @@
 #include <vector>
 
 namespace fire {
+  struct Token;
+  struct NdModule;
+
   struct SourceCode {
     std::string path;
     std::string data;
 
+    std::vector<Token> tokens;
+
+    NdModule* parsed_mod = nullptr;
+
+    SourceCode* parent = nullptr;
     std::vector<SourceCode*> imports;
 
     SourceCode(std::string const& _path);
+
+    SourceCode* import(std::string const& _path);
+
+    void import_directory(std::string const& _path);
+
+    size_t get_depth() const;
+
+    std::string get_folder() const;
 
     size_t get_len() const { return data.length(); }
 

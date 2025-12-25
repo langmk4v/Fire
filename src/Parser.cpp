@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include "Utils.hpp"
 #include "Parser.hpp"
 #include "Error.hpp"
@@ -485,12 +487,53 @@ namespace fire {
     throw err::expected_item_of_module(*cur);
   }
 
+  void Parser::ps_import(NdModule* mod) {
+
+    auto import_token = cur;
+
+    std::string path = expect_ident()->text;
+
+    while (!is_end() && eat("::")) {
+      path += "/";
+
+      if (eat("*")) {
+        todo;
+      }
+
+      path += expect_ident()->text;
+    }
+
+    expect(";");
+
+    path = std::filesystem::absolute(source.get_folder() + path).string();
+
+    if (!std::filesystem::exists(path)) {
+      if (std::filesystem::exists(path + ".fire")) {
+        path += ".fire";
+
+        auto imported = source.import(path);
+
+        if (imported->get_depth() >= 4) {
+          throw err::parses::import_depth_limit_exceeded(*import_token, imported->path);
+        }
+      } else {
+        throw err::parses::cannot_open_file(*import_token, path);
+      }
+    } else if (std::filesystem::is_directory(path)) {
+      source.import_directory(path);
+    }
+
+    for (auto&& i : source.imports) {
+      printd(i->path);
+    }
+  }
+
   NdModule* Parser::ps_mod() {
     NdModule* mod = new NdModule(*cur);
 
     while (!is_end()) {
-      if (look("import")) {
-        todoimpl;
+      if (eat("import")) {
+        ps_import(mod);
       }
 
       auto item = mod->items.emplace_back(ps_mod_item());

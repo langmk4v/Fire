@@ -25,15 +25,12 @@ namespace fire {
     }
 
     for (auto source : this->inputs) {
-      std::vector<Token> tokens;
-
       try {
-        auto lexer = Lexer(*source);
-        tokens = lexer.lex();
+        source->tokens = Lexer(*source).lex();
 
-        auto parser = Parser(*source, tokens);
+        source->parsed_mod = Parser(*source, source->tokens).parse();
 
-        auto mod = parser.parse();
+        auto mod = source->parsed_mod;
 
         mod->name = "__main__";
 
@@ -45,9 +42,7 @@ namespace fire {
           return -1;
         }
 
-        auto se = Sema(mod);
-
-        se.analyze_full();
+        Sema::analyze_all(mod);
 
         if (!mod->main_fn->scope_ptr->as<FunctionScope>()->result_type.equals(TypeInfo(TypeKind::Int))) {
           printf("fatal error: function 'main' must return an int.\n");

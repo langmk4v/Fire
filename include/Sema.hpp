@@ -342,6 +342,8 @@ namespace fire {
   public:
     Sema(NdModule* mod);
 
+    static void analyze_all(NdModule* mod);
+
     void analyze_full();
 
     void check_module(ModuleScope* mod);

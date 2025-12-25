@@ -122,6 +122,15 @@ namespace fire {
       struct cannot_use_decltype_here : e {
         cannot_use_decltype_here(Token const& t) : e(t, "cannot use decltype() here") {}
       };
+
+      struct import_depth_limit_exceeded : e {
+        import_depth_limit_exceeded(Token const& t, std::string const& path)
+            : e(t, "import depth limit exceeded by importing the path '" + path + "'") {}
+      };
+
+      struct cannot_open_file : e {
+        cannot_open_file(Token const& t, std::string const& path) : e(t, "cannot open file '" + path + "'") {}
+      };
     } // namespace parses
 
     namespace semantics {

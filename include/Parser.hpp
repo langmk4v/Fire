@@ -61,6 +61,8 @@ namespace fire {
 
     NdModule* ps_mod();
 
+    void ps_import(NdModule* mod);
+
     NdModule* parse();
 
   private:

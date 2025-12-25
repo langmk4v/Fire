@@ -245,6 +245,12 @@ namespace fire {
     return 0; // no needed.
   }
 
+  void Sema::analyze_all(NdModule* mod) {
+    auto se = Sema(mod);
+
+    se.analyze_full();
+  }
+
   void Sema::analyze_full() { check_module(root_scope); }
 
   void Sema::check_module(ModuleScope* mod) {
