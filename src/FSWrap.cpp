@@ -5,7 +5,7 @@ namespace fire {
 
   void FileSystem::DirectoryWrapper::Dump(int indent) const {
     std::string ind(indent, ' ');
-    std::cout << ind << FileSystem::GetBaseName(path) << "/" << std::endl;
+    std::cout << ind << path << "/" << std::endl;
     for (auto& dir : directories) {
       dir.Dump(indent + 2);
     }

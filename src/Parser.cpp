@@ -4,6 +4,7 @@
 #include "Driver.hpp"
 #include "Parser.hpp"
 #include "Error.hpp"
+#include "FSWrap.hpp"
 
 namespace fire {
 
@@ -742,14 +743,31 @@ namespace fire {
 
     expect(";");
 
-    path = std::filesystem::absolute(source.get_folder() + path).string();
-
     try {
-      ps_do_import(import_token, path);
+      ps_do_import(import_token, std::filesystem::absolute(source.get_folder() + path).string());
     } catch (err::parses::cannot_open_file e) {
-      std::string root = Driver::get_instance()->get_first_cwd();
+      auto fol = FileSystem::GetFolderOfFile(source.path);
 
-      // find in root directory
+      while (true) {
+        if (fol == Driver::get_instance()->get_first_cwd()) {
+          // printd("@@@");
+          throw e;
+        }
+
+        fol = FileSystem::GetFolderOfFile(fol);
+
+        if (auto tmp = fol + "/" + path; FileSystem::IsFile(tmp + ".fire")) {
+          ps_do_import(import_token, tmp + ".fire");
+          return;
+        } else if (FileSystem::IsDirectory(tmp)) {
+          ps_do_import(import_token, tmp);
+          return;
+        }
+
+        // std::cout << fol << std::endl;
+      }
+
+      throw e;
     }
   }
 

@@ -10,10 +10,13 @@ namespace fire {
   public:
     struct DirectoryWrapper {
       std::string path;
+      std::string full_path;
+
       std::vector<DirectoryWrapper> directories;
       std::vector<std::filesystem::path> files;
 
-      DirectoryWrapper(std::string const& path) : path(path) {
+      DirectoryWrapper(std::string const& path)
+          : path(FileSystem::GetBaseName(path)), full_path(FileSystem::GetFullPath(path)) {
         if (!FileSystem::IsDirectory(path)) {
           throw std::invalid_argument("path is not a directory or not exists");
         }
@@ -60,10 +63,38 @@ namespace fire {
         return hits;
       }
 
+      bool Contains_File(std::string const& path) const {
+        for (auto& file : files) {
+          if (file.string() == path) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      bool Contains_Directory(std::string const& path) const {
+        for (auto& dir : directories) {
+          if (dir.path == path) {
+            return true;
+          }
+        }
+        return false;
+      }
+
       void Dump(int indent) const;
     };
 
+    static void SetCwd(std::string const& path) { std::filesystem::current_path(path); }
+
+    static std::string GetCwd() { return std::filesystem::current_path().string(); }
+
     static std::string GetBaseName(std::string const& path) { return std::filesystem::path(path).filename().string(); }
+
+    static std::string GetFullPath(std::string const& path) { return std::filesystem::absolute(path).string(); }
+
+    static std::string GetFolderOfFile(std::string const& path) {
+      return std::filesystem::path(path).parent_path().string();
+    }
 
     static bool Exists(std::string const& path) { return std::filesystem::exists(path); }
 

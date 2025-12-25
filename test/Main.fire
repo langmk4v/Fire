@@ -3,7 +3,7 @@ import Parser;
 import Sema;
 import Compiler;
 
-using firec;
+// using firec;
 
 fn compile(path: string) -> bool {
     try {
@@ -17,7 +17,7 @@ fn compile(path: string) -> bool {
 
         return true;
     }
-    catch FireError e {
+    catch e: FireError {
         e.print();
     }
 
