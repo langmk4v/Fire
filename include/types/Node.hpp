@@ -37,8 +37,6 @@ namespace fire {
 
     BitNot, // ~
     Not,    // !
-    Plus,   // +a
-    Minus,  // -a
 
     Ref,   // &a
     Deref, // *a
@@ -370,7 +368,7 @@ namespace fire {
   struct NdIf : Node {
     NdLet* vardef = nullptr;
     Node* cond = nullptr;
-    Node* thencode = nullptr;
+    NdScope* thencode = nullptr;
     Node* elsecode = nullptr;
     NdIf(Token& t) : Node(NodeKind::If, t) {
     }

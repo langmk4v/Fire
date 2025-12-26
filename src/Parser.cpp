@@ -504,8 +504,13 @@ namespace fire {
       auto x = new NdIf(tok);
       if (look("var")) x->vardef = ps_let(false);
       if (!x->vardef || eat(";")) x->cond = ps_expr();
-      x->thencode = ps_stmt();
-      if (eat("else")) x->elsecode = ps_stmt();
+      x->thencode = ps_scope();
+      if (eat("else")) {
+        if (look("if"))
+          x->elsecode = ps_stmt();
+        else
+          x->elsecode = ps_scope();
+      }
       return x;
     }
 
@@ -607,10 +612,10 @@ namespace fire {
 
       // method
       if (look("fn")) {
-      auto M=  node->methods.emplace_back(ps_function(true));
-      
-      M->is_pub = public_flag;
-      M->take_self=true;
+        auto M = node->methods.emplace_back(ps_function(true));
+
+        M->is_pub = public_flag;
+        M->take_self = true;
       }
 
       // field

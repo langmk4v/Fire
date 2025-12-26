@@ -15,7 +15,10 @@ namespace fire {
   SourceCode::SourceCode(std::string const& _path) : path(std::filesystem::absolute(_path)) {
     auto ifs = std::ifstream(this->path);
 
-    if (ifs.fail()) throw new std::invalid_argument("cannot open file");
+    if (ifs.fail()) {
+      std::cout << "cannot open file: " << this->path << std::endl;
+      std::exit(1);
+    }
 
     for (std::string line; std::getline(ifs, line);)
       this->data.append(line.append("\n"));
@@ -34,9 +37,7 @@ namespace fire {
   //
   // import a file
   SourceCode* SourceCode::import(std::string const& _path) {
-    if (all_sources.find(_path) != all_sources.end()) {
-      return all_sources[_path];
-    }
+    if (all_sources.find(_path) != all_sources.end()) { return all_sources[_path]; }
 
     auto new_source = new SourceCode(_path);
 
@@ -61,8 +62,12 @@ namespace fire {
     }
   }
 
-  std::string SourceCode::get_folder() const { return path.substr(0, path.find_last_of('/') + 1); }
+  std::string SourceCode::get_folder() const {
+    return path.substr(0, path.find_last_of('/') + 1);
+  }
 
-  size_t SourceCode::get_depth() const { return parent ? parent->get_depth() + 1 : 0; }
+  size_t SourceCode::get_depth() const {
+    return parent ? parent->get_depth() + 1 : 0;
+  }
 
 } // namespace fire

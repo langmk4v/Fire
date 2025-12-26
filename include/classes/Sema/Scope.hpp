@@ -34,17 +34,17 @@ namespace fire {
 
     virtual ~Scope() = default;
 
+    Scope* from_node(Node* node, Scope* parent);
+
   protected:
-    Scope(ScopeKind kind, Node* node, Scope* parent) : kind(kind), node(node), parent(parent) {
-    }
+    Scope(ScopeKind kind, Node* node, Scope* parent);
   };
 
   struct SCScope : Scope {
     SymbolTable variables;
     std::vector<Scope*> subscopes;
 
-    SCScope(NdScope* node, Scope* parent) : Scope(ScopeKind::Scope, node, parent) {
-    }
+    SCScope(NdScope* node, Scope* parent);
   };
 
   struct SCIf : Scope {
@@ -52,24 +52,21 @@ namespace fire {
     SCScope* then_scope = nullptr;
     SCScope* else_scope = nullptr;
 
-    SCIf(NdIf* node, Scope* parent) : Scope(ScopeKind::If, node, parent) {
-    }
+    SCIf(NdIf* node, Scope* parent);
   };
 
   struct SCFor : Scope {
     Symbol* iter_name = nullptr;
     SCScope* body = nullptr;
 
-    SCFor(NdFor* node, Scope* parent) : Scope(ScopeKind::For, node, parent) {
-    }
+    SCFor(NdFor* node, Scope* parent);
   };
 
   struct SCCatch : Scope {
     Symbol* holder_name = nullptr;
     SCScope* body = nullptr;
 
-    SCCatch(NdCatch* node, Scope* parent) : Scope(ScopeKind::Catch, node, parent) {
-    }
+    SCCatch(NdCatch* node, Scope* parent);
   };
 
   struct SCTry : Scope {
@@ -77,30 +74,26 @@ namespace fire {
     std::vector<SCCatch*> catches;
     SCScope* finally_scope = nullptr;
 
-    SCTry(NdTry* node, Scope* parent) : Scope(ScopeKind::Try, node, parent) {
-    }
+    SCTry(NdTry* node, Scope* parent);
   };
 
   struct SCFunction : Scope {
     SymbolTable arguments;
     SCScope* body = nullptr;
 
-    SCFunction(NdFunction* node, Scope* parent) : Scope(ScopeKind::Func, node, parent) {
-    }
+    SCFunction(NdFunction* node, Scope* parent);
   };
 
   struct SCEnum : Scope {
     SymbolTable enumerators;
-    SCEnum(NdEnum* node, Scope* parent) : Scope(ScopeKind::Enum, node, parent) {
-    }
+    SCEnum(NdEnum* node, Scope* parent);
   };
 
   struct SCClass : Scope {
     SymbolTable fields;
     SymbolTable methods;
 
-    SCClass(NdClass* node, Scope* parent) : Scope(ScopeKind::Class, node, parent) {
-    }
+    SCClass(NdClass* node, Scope* parent);
   };
 
   struct SCNamespace : Scope {
@@ -126,8 +119,7 @@ namespace fire {
       todo;
     }
 
-    SCNamespace(NdNamespace* node, Scope* parent) : Scope(ScopeKind::Namespace, node, parent) {
-    }
+    SCNamespace(NdNamespace* node, Scope* parent);
   };
 
   struct SCModule : Scope {
@@ -153,8 +145,7 @@ namespace fire {
       todo;
     }
 
-    SCModule(NdModule* node, Scope* parent) : Scope(ScopeKind::Module, node, parent) {
-    }
+    SCModule(NdModule* node, Scope* parent);
   };
 
 } // namespace fire

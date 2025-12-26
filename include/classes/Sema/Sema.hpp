@@ -42,7 +42,11 @@ namespace fire {
 
     Scope* cur_scope = nullptr;
 
+    SCClass* cur_class = nullptr;
+
     SCFunction* cur_func = nullptr;
+
+    int loop_depth = 0;
 
     TypeInfo* expected_type = nullptr;
   };
@@ -53,20 +57,41 @@ namespace fire {
     std::vector<Symbol*> hits = {};
   };
 
+  class Sema;
+
+  class NameResolver {
+    Sema& S;
+
+  public:
+    NameResolver(Sema& S) : S(S) {
+    }
+
+    void on_typename(Node* node, NdVisitorContext ctx);
+
+    void on_expr(Node* node, NdVisitorContext ctx);
+
+    void on_stmt(Node* node, NdVisitorContext ctx);
+    void on_scope(Node* node, NdVisitorContext ctx);
+
+    void on_function(Node* node, NdVisitorContext ctx);
+    void on_class(Node* node, NdVisitorContext ctx);
+    void on_enum(Node* node, NdVisitorContext ctx);
+    void on_namespace(Node* node, NdVisitorContext ctx);
+    void on_module(Node* node, NdVisitorContext ctx);
+  };
+
   class Sema {
+
+    friend class NameResolver;
 
     SCModule* root_scope = nullptr;
 
   public:
-    Sema();
+    static Sema& get_instance();
 
     static void analyze_all(NdModule* mod);
 
     void analyze_full(NdModule* mod);
-
-    Scope* create_scope(Node* node, Scope* parent);
-
-    NdVisitorContext resolve_names(Node* node, NdVisitorContext ctx);
 
     void infer_types(Node* node);
 
@@ -77,6 +102,8 @@ namespace fire {
     Symbol* new_variable_symbol(Token* tok, std::string const& name);
 
   private:
+    Sema();
+
     TypeInfo eval_expr_ty(Node* node, NdVisitorContext ctx);
 
     TypeInfo eval_typename_ty(NdSymbol* node, NdVisitorContext ctx);

@@ -52,7 +52,8 @@ namespace fire {
     };
 
     struct use_of_undefined_symbol : e {
-      use_of_undefined_symbol(Token const& t) : e(t, "'" + t.text + "' is not found in this scope.") {
+      use_of_undefined_symbol(Token const& t)
+          : e(t, "'" + t.text + "' is not found in this scope.") {
       }
 
       use_of_undefined_symbol(Token const& t, std::string const& scope, std::string const& name)
@@ -61,12 +62,14 @@ namespace fire {
     };
 
     struct not_callable_type : e {
-      not_callable_type(Token const& t, std::string const& ti) : e(t, "'" + ti + "' type object is not callable") {
+      not_callable_type(Token const& t, std::string const& ti)
+          : e(t, "'" + ti + "' type object is not callable") {
       }
     };
 
     struct expected_but_found : e {
-      expected_but_found(Token const& t, char const* expected) : e(t, "expected '"s + expected + "'") {
+      expected_but_found(Token const& t, char const* expected)
+          : e(t, "expected '"s + expected + "'") {
       }
     };
 
@@ -102,14 +105,16 @@ namespace fire {
     };
 
     struct cannot_specify_return_type_of_constructor : e {
-      cannot_specify_return_type_of_constructor(Token const& t) : e(t, "cannot_specify_return_type_of_constructor") {
+      cannot_specify_return_type_of_constructor(Token const& t)
+          : e(t, "cannot_specify_return_type_of_constructor") {
       }
     };
 
     struct duplicate_of_definition : e {
       Token const& first;
 
-      duplicate_of_definition(Token const& dup, Token const& first) : e(dup, "duplicate of definition"), first(first) {
+      duplicate_of_definition(Token const& dup, Token const& first)
+          : e(dup, "duplicate of definition"), first(first) {
         (void)first;
       }
     };
@@ -136,7 +141,8 @@ namespace fire {
 
     struct use_of_invalid_operator : e {
       use_of_invalid_operator(Token const& op, std::string const& left, std::string const& right)
-          : e(op, "use of invalid operator '" + op.text + "' for types '" + left + "' and '" + right + "'") {
+          : e(op, "use of invalid operator '" + op.text + "' for types '" + left + "' and '" +
+                      right + "'") {
       }
     };
 
@@ -173,7 +179,8 @@ namespace fire {
       };
 
       struct cannot_open_file : e {
-        cannot_open_file(Token const& t, std::string const& path) : e(t, "cannot open file '" + path + "'") {
+        cannot_open_file(Token const& t, std::string const& path)
+            : e(t, "cannot open file '" + path + "'") {
         }
       };
     } // namespace parses
@@ -203,6 +210,21 @@ namespace fire {
 
       struct cannot_use_typename_here : e {
         cannot_use_typename_here(Token const& t) : e(t, "cannot use type name here") {
+        }
+      };
+
+      struct cannot_use_break_here : e {
+        cannot_use_break_here(Token const& t) : e(t, "cannot use 'break' here") {
+        }
+      };
+
+      struct cannot_use_continue_here : e {
+        cannot_use_continue_here(Token const& t) : e(t, "cannot use 'continue' here") {
+        }
+      };
+
+      struct cannot_use_return_here : e {
+        cannot_use_return_here(Token const& t) : e(t, "cannot use 'return' here") {
         }
       };
 
@@ -238,7 +260,8 @@ namespace fire {
     };
 
     struct added_pub_attr_automatically : W {
-      added_pub_attr_automatically(Token const& t) : W(t, "visibility was changed to 'pub' automatically.", ET_Warn) {
+      added_pub_attr_automatically(Token const& t)
+          : W(t, "visibility was changed to 'pub' automatically.", ET_Warn) {
       }
     };
 

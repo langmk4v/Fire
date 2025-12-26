@@ -54,7 +54,7 @@ namespace fire {
         Sema::analyze_all(mod);
 
 #ifdef _FIRE_DEBUG_
-        std::cout << node2s(mod) << std::endl;
+        // std::cout << node2s(mod) << std::endl;
 #endif
 
         // if
