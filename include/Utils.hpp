@@ -2,9 +2,6 @@
 
 #include <string>
 #include <vector>
-#include <locale>
-#include <codecvt>
-#include <cstdio>
 
 #define _COL_RGB(r, g, b) "\e[38;2;" #r ";" #g ";" #b "m"
 
@@ -41,7 +38,7 @@
 
 #include <cstdlib>
 #include <cassert>
-#include <iostream>
+#include <iosfwd>
 
 #define debug(...) __VA_ARGS__
 
@@ -65,9 +62,6 @@ namespace fire {
   using std::string_literals::operator""s;
 
   struct Node;
-
-  std::string to_utf8(std::u16string const& s);
-  std::u16string to_utf16(std::string const& s);
 
   std::string node2s(Node* node);
 
@@ -95,5 +89,17 @@ namespace fire {
       if (i < v.size() - 1) s += sep;
     }
     return s;
+  }
+
+  static inline std::string operator+(std::string_view a, char const* b) {
+    return std::string(a) + b;
+  }
+
+  static inline std::string operator+(char const* a, std::string_view b) {
+    return a + std::string(b);
+  }
+
+  static inline std::string operator+(std::string_view a, std::string_view b) {
+    return std::string(a) + std::string(b);
   }
 } // namespace fire

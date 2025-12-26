@@ -2,10 +2,10 @@ import Lexer::Token;
 
 namespace firec {
     enum NodeKind {
-        Literal(Object),
-        CallFunc(func: Node, args: vector<Node>),
+        Literal(int),
+        CallFunc(func: Node, args: Vec<Node>),
         KeyValuePair(key: Node, value: Node),
-        Expr(ExprKind, vector<Node>)
+        Expr(ExprKind, Vec<Node>)
     }
 
     enum ExprKind {
@@ -24,11 +24,11 @@ namespace firec {
             return Node(kind: NodeKind::Literal(val), token: tok);
         }
 
-        fn new_call_func(tok: Lexer::Token, func: Node, args: vector<Node>) -> Node {
+        fn new_call_func(tok: Lexer::Token, func: Node, args: Vec<Node>) -> Node {
             return Node(kind: NodeKind::CallFunc(func: func, args: args), token: tok);
         }
 
-        fn new_expr(tok: Lexer::Token, kind: ExprKind, terms: vector<Node>) -> Node {
+        fn new_expr(tok: Lexer::Token, kind: ExprKind, terms: Vec<Node>) -> Node {
             return Node(kind: NodeKind::Expr(kind, terms), token: tok);
         }
     }

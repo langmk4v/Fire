@@ -17,6 +17,9 @@ namespace fire {
     Class,
     Namespace,
     Module,
+    TemplateParam,
+    BuiltinType,
+    BuiltinFunc,
   };
 
   struct VariableInfo;

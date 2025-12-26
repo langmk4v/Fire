@@ -1,69 +1,52 @@
 #include "Utils.hpp"
-#include "Lexer.hpp"
 #include "Error.hpp"
+
+#include "Lexer.hpp"
 
 namespace fire {
 
-  std::vector<Token> Lexer::lex() {
-    remove_all_comments();
+  extern _token_punct_str_map_ const* _psmap_table_pointer_;
+  extern volatile size_t _psmap_table_size_;
 
-    _pos = 0;
-
-    auto tokens = std::vector<Token>();
-
-    pass_space();
-
-    while (!is_end())
-      tokens.emplace_back(tokenize(peek()));
-
-    tokens.emplace_back(TokenKind::Eof, "", &_source, _pos);
-
-    for (size_t i = 0; i < tokens.size(); i++)
-      tokens[i].index = i;
-
-    size_t i = 0, line = 1, col = 1;
-    for (auto& t : tokens) {
-      for (; i < t.pos; i++, col++)
-        if (_source[i] == '\n') line++, col = 0;
-
-      t.line = line;
-      t.column = col;
-    }
-
-    return tokens;
-  }
-
-  void Lexer::remove_all_comments() {
-    while (_pos < _len) {
-      if (match("//")) {
-        replace(2, ' ');
-        _pos += 2;
-        while (!is_end() && !match("\n")) {
-          replace(1, ' ');
-          _pos++;
-        }
-      } else if (match("/*")) {
-        replace(2, ' ');
-        _pos += 2;
-        while (!is_end()) {
-          if (match("*/")) {
-            replace(2, ' ');
-            break;
-          }
-          replace(1, ' ');
-          _pos++;
-        }
-      } else {
-        _pos++;
+  static _token_punct_str_map_ const* find_punct(char const* ptr) {
+    for (size_t i = 0; i < _psmap_table_size_; i++) {
+      if (std::strncmp(ptr, _psmap_table_pointer_[i].str, std::strlen(_psmap_table_pointer_[i].str)) == 0) {
+        return &_psmap_table_pointer_[i];
       }
     }
+    return nullptr;
   }
 
-  Token Lexer::tokenize(char c) {
+  Token* Lexer::lex() {
+    Token head;
+    Token* cur = &head;
+
     pass_space();
 
+    while (!is_end()) {
+      while(match("//")) { pass_line_comment(); }
+      while(match("/*")) { pass_block_comment(); }  
+      pass_space();
+      cur = tokenize(peek(), cur);
+    }
+
+    cur->next = new Token(TokenKind::Eof, std::string_view(), cur, _source, _pos);
+
+    size_t i = 0, line = 1, col = 1;
+
+    for (Token* t = head.next; (t = t->next);) {
+      for (; i < t->pos; i++, col++)
+        if (get_char(i) == '\n') line++, col = 0;
+      t->line = line;
+      t->column = col;
+    }
+
+    return head.next;
+  }
+
+  Token* Lexer::tokenize(char c, Token* prev) {
     TokenKind kind = TokenKind::Unknown;
-    char const* str = _source.data.data() + _pos;
+    char const* str = getptr();
     size_t len = 0;
     size_t pos = _pos;
 
@@ -81,7 +64,7 @@ namespace fire {
         if (peek() == 'f') _pos++, len++;
       }
       pass_space();
-      return Token(kind, std::string(str, len), &_source, pos);
+      return new Token(kind, std::string_view(str, len), prev, _source, pos);
     }
 
     // a-z|A-Z|_
@@ -90,7 +73,7 @@ namespace fire {
       while (!is_end() && (std::isalnum((c = peek())) || c == '_'))
         _pos++, len++;
       pass_space();
-      return Token(kind, std::string(str, len), &_source, pos);
+      return new Token(kind, std::string_view(str, len), prev, _source, pos);
     }
 
     // char or string
@@ -98,7 +81,8 @@ namespace fire {
       kind = c == '"' ? TokenKind::String : TokenKind::Char;
       _pos++;
       char x;
-      std::string ss = std::string(1, c);
+      std::string* ss_ = new std::string(1, c);
+      std::string&ss=*ss_;
       while (!is_end() && (x = peek()) != c) {
         if (x == '\\') {
           _pos++;
@@ -108,7 +92,7 @@ namespace fire {
             case 'r': x = '\r'; break;
             case 'n': x = '\n'; break;
             case 'b': x = '\b'; break;
-            default: alert; throw 10;
+            default: todoimpl;
           }
         }
         ss += x;
@@ -120,28 +104,24 @@ namespace fire {
       }
       _pos++;
       pass_space();
-      return Token(kind, ss + c, &_source, pos);
+      ss_->push_back(c);
+      return new Token(kind, std::string_view(ss_->data(),ss_->length()), prev, _source, pos);
     }
 
-    // punctuator
-    static char const* _plist[] = {
-        // assign with op
-        ">>=", "<<=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=",
-
-        "##",  "++",  "--", "<<", ">>", "<=", ">=", "==", "!=", "&&", "||", "::", "->", "=>",
-        "#",   "$",   "`",  "+",  "-",  "*",  "/",  "%",  "|",  "&",  "~",  "^",  "=",  ",",
-        ".",   ";",   ":",  "?",  "!",  "(",  ")",  "<",  ">",  "[",  "]",  "{",  "}",
-    };
-
-    for (std::string s : _plist) {
-      if (match(s)) {
-        _pos += s.length();
-        pass_space();
-        return Token(TokenKind::Punctuator, s, &_source, pos);
-      }
+    else if (_token_punct_str_map_ const* p = find_punct(getptr()); p != nullptr) {
+      _pos+=std::strlen(p->str);
+      pass_space();
+      auto tok= new Token(TokenKind::Punctuator, std::string_view(p->str), prev, _source, pos);
+      tok->punct=p->punct;
+      return tok;
     }
 
-    throw err::invalid_token(Token(TokenKind::Unknown, std::string(1, c), &_source, pos));
+    char*buf=new char[2];
+    buf[0]=c;
+    buf[1]=0;
+
+    throw err::invalid_token(
+        *(new Token(TokenKind::Unknown, buf, prev, _source, pos)));
   }
 
-} // namespace fire
+} // namespace fire 

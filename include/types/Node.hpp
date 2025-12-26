@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "Utils.hpp"
+
 #include "Lexer.hpp"
 #include "Token.hpp"
 #include "Object.hpp"
@@ -37,8 +39,6 @@ namespace fire {
 
     BitNot, // ~
     Not,    // !
-    Plus,   // +a
-    Minus,  // -a
 
     Ref,   // &a
     Deref, // *a
@@ -126,6 +126,7 @@ namespace fire {
     Scope* scope_ptr = nullptr;
 
     TypeInfo ty = {};
+    bool ty_evaluated = false;
 
     template <typename T>
     T* as() {
@@ -137,11 +138,11 @@ namespace fire {
     }
 
     bool is_expr() const {
-      return kind >= NodeKind::Mul && kind <= NodeKind::Assign;
+      return kind >= NodeKind::Mul && kind <= NodeKind::AssignWithOp;
     }
 
     bool is_expr_full() const {
-      return kind <= NodeKind::Assign;
+      return kind <= NodeKind::AssignWithOp;
     };
 
     virtual ~Node() {
@@ -165,6 +166,8 @@ namespace fire {
   struct NdValue : Node {
     Object* obj = nullptr;
     NdValue(Token& t) : Node(NodeKind::Value, t) {
+    }
+    NdValue(Token& t, Object* obj) : Node(NodeKind::Value, t), obj(obj) {
     }
   };
 
@@ -243,6 +246,8 @@ namespace fire {
     bool is_method_call = false;
     Node* inst_expr = nullptr; // 'a' of "a.f()"
 
+    Node* self_obj(){return inst_expr;}
+
     // inst_expr はあるが、args にも同じものを先頭に追加します
 
     NdFunction* func_nd = nullptr;
@@ -259,6 +264,7 @@ namespace fire {
   struct NdGetTupleElement : Node {
     Node* expr;
     int index;
+    Token* index_tok = nullptr;
     NdGetTupleElement(Token& tok, Node* expr, int index)
         : Node(NodeKind::GetTupleElement, tok), expr(expr), index(index) {
     }
@@ -370,7 +376,7 @@ namespace fire {
   struct NdIf : Node {
     NdLet* vardef = nullptr;
     Node* cond = nullptr;
-    Node* thencode = nullptr;
+    NdScope* thencode = nullptr;
     Node* elsecode = nullptr;
     NdIf(Token& t) : Node(NodeKind::If, t) {
     }
@@ -448,24 +454,35 @@ namespace fire {
     }
   };
 
-  struct __attribute__((packed)) NdEnumeratorDef : Node {
-    Token name;
-    NdSymbol* variant_type = nullptr;
-    std::vector<Node*> multiple;
-
-    bool is_no_variants : 1 = false;   // Kind
-    bool is_one_type : 1 = false;      // Kind(T)
-    bool is_type_names : 1 = false;    // Kind(T, U, ...)  -->  multiple< NdSymbol >
-    bool is_struct_fields : 1 = false; // Kind(a: T, ...)  -->  multiple< NdKeyValuePair >
-
-    NdEnumeratorDef(Token& t) : Node(NodeKind::EnumeratorDef, t) {
-    }
-  };
-
+  struct NdEnumeratorDef;
   struct NdEnum : Node {
     Token name;
     std::vector<NdEnumeratorDef*> enumerators;
     NdEnum(Token& t) : Node(NodeKind::Enum, t) {
+    }
+  };
+
+  struct NdEnumeratorDef : Node {
+    enum VariantTypes {
+      NoVariants,
+      OneType,
+      MultipleTypes,
+      StructFields,
+    };
+
+    VariantTypes type = NoVariants;
+
+    Token name;
+    NdSymbol* variant = nullptr;
+    std::vector<Node*> multiple;
+
+    NdEnum* parent_enum_node = nullptr;
+
+    std::string get_full_name() const {
+      return parent_enum_node->name.text + "::" + name.text;
+    }
+
+    NdEnumeratorDef(Token& t) : Node(NodeKind::EnumeratorDef, t) {
     }
   };
 

@@ -11,16 +11,6 @@ namespace fire {
   using std::string_literals::operator""s;
   using string = std::string;
 
-  static std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
-
-  std::string to_utf8(std::u16string const& s) {
-    return conv.to_bytes(s);
-  }
-
-  std::u16string to_utf16(std::string const& s) {
-    return conv.from_bytes(s);
-  }
-
   static std::string template_params_2s(NdTemplatableBase* tpbase) {
     if (tpbase->count() == 0) { return ""; }
 
@@ -106,8 +96,8 @@ namespace fire {
         return ss.str();
       }
 
-      case NodeKind::Not: {
-      }
+      case NodeKind::Not:
+        return "!" + node2s(node->as<NdNot>()->expr);
 
       case NodeKind::Ref:
         return "&" + node2s(node->as<NdRef>()->expr);
@@ -204,8 +194,31 @@ namespace fire {
         return ss.str();
       }
 
-      case NodeKind::Enum:
-        return "enum ";
+      case NodeKind::Enum: {
+        auto x = node->as<NdEnum>();
+        std::stringstream ss;
+        ss << "enum " << x->name.text << " {\n"
+           << ind << "  " << join(",\n" + ind + "  ", x->enumerators, node2s) << "\n"
+           << ind << "}";
+        return ss.str();
+      }
+
+      case NodeKind::EnumeratorDef: {
+        auto x = node->as<NdEnumeratorDef>();
+        std::stringstream ss;
+        if (x->type == NdEnumeratorDef::NoVariants) {
+          ss << x->name.text;
+        } else {
+          ss << x->name.text << "(";
+          if (x->type==NdEnumeratorDef::MultipleTypes || x->type==NdEnumeratorDef::StructFields) {
+            ss << join(", ", x->multiple, node2s);
+          } else {
+            ss << node2s(x->variant);
+          }
+          ss << ")";
+        }
+        return ss.str();
+      }
 
       case NodeKind::Class: {
         auto x = node->as<NdClass>();

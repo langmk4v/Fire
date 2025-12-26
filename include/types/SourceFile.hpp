@@ -1,40 +1,40 @@
 #pragma once
 
-#include <string>
 #include <vector>
+#include <string>
+
+#include "FileSystem.hpp"
 
 namespace fire {
   struct Token;
   struct NdModule;
 
-  struct SourceCode {
+  struct SourceFile {
     std::string path;
     std::string data;
+    size_t length = 0;
 
-    std::vector<Token> tokens;
-
-    NdModule* parsed_mod = nullptr;
-
-    SourceCode* parent = nullptr;
-    std::vector<SourceCode*> imports;
+    SourceFile* parent = nullptr;
+    std::vector<SourceFile*> imports;
 
     bool is_node_imported = false;
 
-    SourceCode(std::string const& _path);
+    Token* lexed_token = nullptr;
+    NdModule* parsed_mod = nullptr;
+
+    SourceFile(std::string const& _path);
+
+    Token* lex();
 
     NdModule* parse();
 
-    SourceCode* import(std::string const& _path);
+    SourceFile* import(std::string const& _path);
 
     void import_directory(std::string const& _path);
 
     size_t get_depth() const;
 
     std::string get_folder() const;
-
-    size_t get_len() const { return data.length(); }
-
-    char& operator[](size_t const _index) { return data[_index]; }
 
     char operator[](size_t const _index) const { return data[_index]; }
   };

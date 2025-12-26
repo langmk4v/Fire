@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
+#include <cstring>
 
 #include "Utils.hpp"
 
@@ -26,20 +27,53 @@ namespace fire {
   int Driver::main(int argc, char** argv) {
     this->cwd = std::filesystem::current_path().string();
 
-    for (int i = 1; i < argc; i++)
-      this->inputs.emplace_back(new SourceCode(argv[i]));
+    bool opt_print_ast = false;
+    bool opt_print_tokens = false;
+    
+    for (int i = 1; i < argc; i++) {
+      char const* arg = argv[i];
+
+      if (std::strncmp(arg, "--", 2) == 0) {
+        arg += 2;
+
+        if (std::strcmp(arg, "print-ast") == 0) {
+          opt_print_ast = true;
+        }
+        else if(std::strcmp(arg,"print-tokens")==0){
+          opt_print_tokens=true;
+        }
+        else {
+          std::cout << "unknown option: " << arg << std::endl;
+          return -1;
+        }
+      } else {
+        this->inputs.emplace_back(new SourceFile(arg));
+      }
+    }
 
     if (inputs.empty()) {
       std::cout << "no input files." << std::endl;
       return -1;
     }
 
-    for (auto source : this->inputs) {
+    for (SourceFile* source : this->inputs) {
 
       std::filesystem::current_path(source->get_folder());
 
       try {
+        auto tok = source->lex();
+
+        if (opt_print_tokens) {
+          for(Token*t=source->lexed_token;t;t=t->next)
+            std::cout<<t->text<<" ";
+          std::cout<<std::endl;
+        }
+
         auto mod = source->parse();
+
+        if (opt_print_ast) {
+          std::cout << node2s(mod) << std::endl;
+        }
 
         mod->name = "__main__";
 
@@ -53,10 +87,6 @@ namespace fire {
 
         Sema::analyze_all(mod);
 
-#ifdef _FIRE_DEBUG_
-        std::cout << node2s(mod) << std::endl;
-#endif
-
         // if
         // (!mod->main_fn->scope_ptr->as<FunctionScope>()->result_type.equals(TypeInfo(TypeKind::Int)))
         // {
@@ -67,7 +97,11 @@ namespace fire {
         // Compiler::compile_full(IR::from_node(mod));
 
         return 0;
-      } catch (int n) { printf("%d\n", n); } catch (err::e e) {
+      }
+      catch (int n) {
+        printf("%d\n", n);
+      }
+      catch (err::e& e) {
         e.print();
       }
     }

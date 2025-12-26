@@ -1,10 +1,12 @@
+#include <iostream>
 #include "Utils.hpp"
 #include "Error.hpp"
 
 namespace fire::err {
 
   e::e(Token const& tok, std::string msg, errTypes et)
-      : s(*tok.source), pos(tok.pos), len(tok.text.length()), msg(std::move(msg)), line(tok.line), column(tok.column) {
+      : s(*tok.source), pos(tok.pos), len(tok.text.length()), msg(std::move(msg)), line(tok.line),
+        column(tok.column) {
     if (et == ET_Error)
       tag = COL_RED "error" COL_DEFAULT;
     else if (et == ET_Warn)
@@ -15,11 +17,12 @@ namespace fire::err {
       tag = "???";
   }
 
-  e* e::print() {
-    size_t begin = 0, end = s.get_len();
+  e* e::print(bool show_file_loc) {
+    size_t begin = 0, end = s.length;
 
     for (size_t i = 0; i <= pos; i++)
-      if (s[i] == '\n') begin = i + 1;
+      if (s[i] == '\n')
+        begin = i + 1;
 
     for (size_t i = pos; i < end; i++)
       if (s[i] == '\n') {
@@ -29,12 +32,18 @@ namespace fire::err {
 
     std::string linenum_s = std::to_string(line);
 
-    std::cout << COL_BOLD << tag << ": " COL_WHITE << msg << COL_DEFAULT << COL_DEFAULT << std::endl
-              << COL_LIGHT_GREEN << " -> " << s.path << ":" << line << ":" << column << COL_DEFAULT << std::endl
-              << "  " << std::string(linenum_s.length(), ' ') << " |" << std::endl
-              << "  " << linenum_s << " | " << s.data.substr(begin, end - begin) << std::endl
-              << "  " << std::string(linenum_s.length(), ' ') << " |" << std::string(column, ' ') << "^" << std::endl
+    std::cout << COL_BOLD << tag << ": " COL_WHITE << msg << COL_DEFAULT << COL_DEFAULT
               << std::endl;
+
+    if (show_file_loc)
+      std::cout << COL_LIGHT_GREEN << " -> " << s.path << ":" << line << ":" << column
+                << COL_DEFAULT << std::endl;
+
+    std::cout 
+      << "  " << linenum_s << " | " << std::string_view(s.data.data() + begin, end - begin) << std::endl
+      << "  " << std::string(linenum_s.length(), ' ') << " |" << std::string(column, ' ')
+      << "^" << std::endl
+      << std::endl;
 
     return this;
   }

@@ -6,6 +6,8 @@
 #include "Error.hpp"
 #include "FileSystem.hpp"
 
+#include "strconv.h"
+
 namespace fire {
 
   NdSymbol* Parser::ps_symbol(bool as_typename) {
@@ -33,7 +35,8 @@ namespace fire {
     }
 
     if (as_typename) {
-      if (eat(":")) sym->concept_nd = ps_type_name();
+      if (eat(":"))
+        sym->concept_nd = ps_type_name();
       sym->is_ref = eat("ref");
       sym->is_const = eat("const");
     }
@@ -105,7 +108,8 @@ namespace fire {
     if (eat("[")) {
       auto node = new NdArray(tok);
 
-      if (eat("]")) return node;
+      if (eat("]"))
+        return node;
 
       do {
         node->data.emplace_back(ps_expr());
@@ -116,7 +120,8 @@ namespace fire {
       return node;
     }
 
-    if (eat("self")) return new NdSelf(tok);
+    if (eat("self"))
+      return new NdSelf(tok);
 
     if (eat("true")) {
       auto v = new NdValue(tok);
@@ -130,35 +135,43 @@ namespace fire {
       return v;
     }
 
-    if (eat("decltype")) { throw err::parses::cannot_use_decltype_here(tok); }
+    if (eat("decltype")) {
+      throw err::parses::cannot_use_decltype_here(tok);
+    }
 
-    if (cur->is(TokenKind::Identifier)) { return ps_symbol(); }
+    if (cur->is(TokenKind::Identifier)) {
+      return ps_symbol();
+    }
 
     NdValue* v = new NdValue(*cur);
 
     switch (cur->kind) {
       case TokenKind::Int:
-        v->obj = new ObjInt(std::stoll(cur->text));
-        cur++;
+        v->obj = new ObjInt(std::atoll(cur->text.data()));
+        next();
         break;
 
       case TokenKind::Float:
-        v->obj = new ObjFloat(std::stold(cur->text));
-        cur++;
+        v->obj = new ObjFloat(std::atof(cur->text.data()));
+        next();
         break;
 
       case TokenKind::Char: {
-        auto s16 = to_utf16(cur->text.substr(1, cur->text.size() - 2));
-        if (s16.empty() || s16.size() > 1) { throw err::invalid_character_literal(*cur); }
+        std::u16string s16 = utf8_to_utf16_len_cpp(cur->text.data() + 1, cur->text.length() - 2);
+
+        if (s16.empty() || s16.size() > 1) {
+          throw err::invalid_character_literal(*cur);
+        }
         v->obj = new ObjChar(s16[0]);
-        cur++;
+        next();
         break;
       }
 
-      case TokenKind::String:
-        v->obj = new ObjString(to_utf16(cur->text.substr(1, cur->text.size() - 2)));
-        cur++;
+      case TokenKind::String: {
+        v->obj = new ObjString(utf8_to_utf16_len_cpp(cur->text.data()+1, cur->text.length()-2));
+        next();
         break;
+      }
 
       default:
         throw err::invalid_syntax(*cur);
@@ -176,6 +189,11 @@ namespace fire {
       auto op = cur;
       if (eat("(")) {
         auto y = new NdCallFunc(x, *op);
+        if(x->is(NodeKind::MemberAccess)){
+          y->is_method_call = true;
+          y->inst_expr = x->as<NdExpr>()->lhs;
+          y->callee = x->as<NdExpr>()->rhs;
+        }
         if (!eat(")")) {
           do {
             auto key = ps_expr();
@@ -208,28 +226,32 @@ namespace fire {
           expect("]");
         }
       } else if (eat(".")) {
-        auto right = ps_factor();
-
-        if (right->kind == NodeKind::Value && right->token.kind == TokenKind::Int) {
-          x = new NdGetTupleElement(tok, x, std::stoll(right->token.text));
-          break;
+        // get tuple element:
+        // a.<N>
+        if (eat("<")) {
+          if (cur->kind != TokenKind::Int) {
+            throw err::expected_but_found(*cur, "int");
+          }
+          x = new NdGetTupleElement(tok, x, atol(cur->text.data()));
+          x->as<NdGetTupleElement>()->index_tok = cur;
+          next();
+          expect(">");
+          continue;
         }
-
-        if (auto rr = right->as<NdCallFunc>(); right->is(NodeKind::CallFunc)) {
-          rr->is_method_call = true;
-          rr->inst_expr = x;
-          rr->args.insert(rr->args.begin(), x);
-          x = rr;
-        } else {
-          if (right->kind != NodeKind::Symbol) { throw err::invalid_syntax(*op); }
+        else {
+          auto right = ps_factor();
           x = new NdExpr(NodeKind::MemberAccess, *op, x, right);
         }
       } else
         break;
     }
 
-    if (eat("++")) { return new NdInclement(tok, x, false); }
-    if (eat("--")) { return new NdDeclement(tok, x, false); }
+    if (eat("++")) {
+      return new NdInclement(tok, x, false);
+    }
+    if (eat("--")) {
+      return new NdDeclement(tok, x, false);
+    }
 
     return x;
   }
@@ -237,10 +259,15 @@ namespace fire {
   Node* Parser::ps_unary() {
     auto& tok = *cur;
 
-    if (eat("++")) { return new NdInclement(tok, ps_subscript(), true); }
+    if (eat("++")) {
+      return new NdInclement(tok, ps_subscript(), true);
+    }
 
-    if (eat("--")) { return new NdDeclement(tok, ps_subscript(), true); }
+    if (eat("--")) {
+      return new NdDeclement(tok, ps_subscript(), true);
+    }
 
+    /*
     if (eat("new")) {
       auto node = new NdNew(tok);
       node->type = ps_type_name();
@@ -251,9 +278,11 @@ namespace fire {
         expect(")");
       }
       return node;
-    }
+    }*/
 
-    if (eat("delete")) { todoimpl; }
+    if (eat("delete")) {
+      todoimpl;
+    }
 
     if (eat("&")) {
       auto node = new NdRef(tok);
@@ -412,7 +441,7 @@ namespace fire {
     auto x = ps_bit_or();
 
     while (!is_end() && eat("&&"))
-      x = new NdExpr(NodeKind::LogAnd, *(cur - 1), x, ps_bit_or());
+      x = new NdExpr(NodeKind::LogAnd, *cur->prev, x, ps_bit_or());
 
     return x;
   }
@@ -421,7 +450,7 @@ namespace fire {
     auto x = ps_log_and();
 
     while (!is_end() && eat("||"))
-      x = new NdExpr(NodeKind::LogOr, *(cur - 1), x, ps_log_and());
+      x = new NdExpr(NodeKind::LogOr, *cur->prev, x, ps_log_and());
 
     return x;
   }
@@ -430,18 +459,29 @@ namespace fire {
     auto x = ps_log_or();
     auto op = cur;
 
-    if (eat("=")) x = new NdExpr(NodeKind::Assign, *op, x, ps_assign());
+    if (eat("="))
+      x = new NdExpr(NodeKind::Assign, *op, x, ps_assign());
 
-    if (eat("+=")) x = new NdAssignWithOp(NodeKind::Add, *op, x, ps_assign());
-    if (eat("-=")) x = new NdAssignWithOp(NodeKind::Sub, *op, x, ps_assign());
-    if (eat("*=")) x = new NdAssignWithOp(NodeKind::Mul, *op, x, ps_assign());
-    if (eat("/=")) x = new NdAssignWithOp(NodeKind::Div, *op, x, ps_assign());
-    if (eat("%=")) x = new NdAssignWithOp(NodeKind::Mod, *op, x, ps_assign());
-    if (eat("&=")) x = new NdAssignWithOp(NodeKind::BitAnd, *op, x, ps_assign());
-    if (eat("|=")) x = new NdAssignWithOp(NodeKind::BitOr, *op, x, ps_assign());
-    if (eat("^=")) x = new NdAssignWithOp(NodeKind::BitXor, *op, x, ps_assign());
-    if (eat("<<=")) x = new NdAssignWithOp(NodeKind::LShift, *op, x, ps_assign());
-    if (eat(">>=")) x = new NdAssignWithOp(NodeKind::RShift, *op, x, ps_assign());
+    if (eat("+="))
+      x = new NdAssignWithOp(NodeKind::Add, *op, x, ps_assign());
+    if (eat("-="))
+      x = new NdAssignWithOp(NodeKind::Sub, *op, x, ps_assign());
+    if (eat("*="))
+      x = new NdAssignWithOp(NodeKind::Mul, *op, x, ps_assign());
+    if (eat("/="))
+      x = new NdAssignWithOp(NodeKind::Div, *op, x, ps_assign());
+    if (eat("%="))
+      x = new NdAssignWithOp(NodeKind::Mod, *op, x, ps_assign());
+    if (eat("&="))
+      x = new NdAssignWithOp(NodeKind::BitAnd, *op, x, ps_assign());
+    if (eat("|="))
+      x = new NdAssignWithOp(NodeKind::BitOr, *op, x, ps_assign());
+    if (eat("^="))
+      x = new NdAssignWithOp(NodeKind::BitXor, *op, x, ps_assign());
+    if (eat("<<="))
+      x = new NdAssignWithOp(NodeKind::LShift, *op, x, ps_assign());
+    if (eat(">>="))
+      x = new NdAssignWithOp(NodeKind::RShift, *op, x, ps_assign());
 
     return x;
   }
@@ -465,9 +505,12 @@ namespace fire {
     } else
       expect_ident();
 
-    if (eat(":")) let->type = ps_type_name();
-    if (eat("=")) let->init = ps_expr();
-    if (expect_semi) expect(";");
+    if (eat(":"))
+      let->type = ps_type_name();
+    if (eat("="))
+      let->init = ps_expr();
+    if (expect_semi)
+      expect(";");
 
     return let;
   }
@@ -475,16 +518,20 @@ namespace fire {
   Node* Parser::ps_stmt() {
     auto& tok = *cur;
 
-    if (look("{")) return ps_scope();
+    if (look("{"))
+      return ps_scope();
 
-    if (look("var")) return ps_let();
+    if (look("var"))
+      return ps_let();
 
     if (eat("try")) {
       auto x = new NdTry(tok);
 
       x->body = ps_scope();
 
-      if (!look("catch")) { throw err::parses::expected_catch_block(*(cur - 1)); }
+      if (!look("catch")) {
+        throw err::parses::expected_catch_block(*cur->prev);
+      }
 
       while (!is_end() && eat("catch")) {
         auto catch_ = new NdCatch(tok);
@@ -495,24 +542,35 @@ namespace fire {
         x->catches.emplace_back(catch_);
       }
 
-      if (eat("finally")) { x->finally_block = ps_scope(); }
+      if (eat("finally")) {
+        x->finally_block = ps_scope();
+      }
 
       return x;
     }
 
     if (eat("if")) {
       auto x = new NdIf(tok);
-      if (look("var")) x->vardef = ps_let(false);
-      if (!x->vardef || eat(";")) x->cond = ps_expr();
-      x->thencode = ps_stmt();
-      if (eat("else")) x->elsecode = ps_stmt();
+      if (look("var"))
+        x->vardef = ps_let(false);
+      if (!x->vardef || eat(";"))
+        x->cond = ps_expr();
+      x->thencode = ps_scope();
+      if (eat("else")) {
+        if (look("if"))
+          x->elsecode = ps_stmt();
+        else
+          x->elsecode = ps_scope();
+      }
       return x;
     }
 
     if (eat("while")) {
       auto x = new NdWhile(tok);
-      if (look("var")) x->vardef = ps_let(false);
-      if (!x->vardef || eat(";")) x->cond = ps_expr();
+      if (look("var"))
+        x->vardef = ps_let(false);
+      if (!x->vardef || eat(";"))
+        x->cond = ps_expr();
       x->body = ps_scope();
       return x;
     }
@@ -528,7 +586,8 @@ namespace fire {
 
     if (eat("return")) {
       auto nd = new NdReturn(tok);
-      if (!eat(";")) nd->expr = ps_expr(), expect(";");
+      if (!eat(";"))
+        nd->expr = ps_expr(), expect(";");
       return nd;
     }
 
@@ -553,7 +612,8 @@ namespace fire {
     if (!eat("}")) {
       while (!is_end()) {
         x->items.emplace_back(ps_stmt());
-        if (eat("}")) return x;
+        if (eat("}"))
+          return x;
       }
       throw err::scope_not_terminated(x->token);
     } else
@@ -571,7 +631,8 @@ namespace fire {
 
         if (is_method && eat("self")) {
           node->take_self = true;
-          if (!eat(",")) goto L_fn_pass_args;
+          if (!eat(","))
+            goto L_fn_pass_args;
         }
 
         do {
@@ -596,21 +657,23 @@ namespace fire {
     auto node = new NdClass(tok, *expect_ident());
     _parse_template_param_defs(*node);
 
-    if (eat(":")) node->base_class = ps_type_name();
+    if (eat(":"))
+      node->base_class = ps_type_name();
 
     expect("{");
 
-    if (eat("}")) throw err::empty_class_or_enum_is_not_valid(tok);
+    if (eat("}"))
+      throw err::empty_class_or_enum_is_not_valid(tok);
 
     while (!is_end()) {
       auto public_flag = eat("pub");
 
       // method
       if (look("fn")) {
-      auto M=  node->methods.emplace_back(ps_function(true));
-      
-      M->is_pub = public_flag;
-      M->take_self=true;
+        auto M = node->methods.emplace_back(ps_function(true));
+
+        M->is_pub = public_flag;
+        M->take_self = true;
       }
 
       // field
@@ -619,12 +682,13 @@ namespace fire {
 
       else if (eat("new")) {
         if (!public_flag) {
-          warns::added_pub_attr_automatically (*(cur - 1))();
-          warns::show_note(*(cur - 1), "insert 'pub' keyword to remove this warning messages.")();
+          warns::added_pub_attr_automatically (*cur->prev)();
+          warns::show_note(*cur->prev, "insert 'pub' keyword to remove this warning messages.")();
         }
 
-        if (node->m_new) throw err::duplicate_of_definition(*(cur - 1), node->m_new->token);
-        auto newfn = new NdFunction(*(cur - 1), *(cur - 1));
+        if (node->m_new)
+          throw err::duplicate_of_definition(*cur->prev, node->m_new->token);
+        auto newfn = new NdFunction(*cur->prev, *cur->prev);
         if (eat("(") && !eat(")")) {
           do {
             auto& A = newfn->args.emplace_back(*expect_ident(), nullptr);
@@ -633,7 +697,9 @@ namespace fire {
           } while (eat(","));
           expect(")");
         }
-        if (look("->")) { throw err::cannot_specify_return_type_of_constructor(*cur); }
+        if (look("->")) {
+          throw err::cannot_specify_return_type_of_constructor(*cur);
+        }
         newfn->body = ps_scope();
         node->m_new = newfn;
       } else if (eat("delete")) {
@@ -654,8 +720,8 @@ namespace fire {
     nd->name = *tok;
 
     if (eat("(")) {
-      if (cur->kind == TokenKind::Identifier && (cur + 1)->text == ":") {
-        nd->is_struct_fields = true;
+      if (cur->kind == TokenKind::Identifier && cur->next->text == ":") {
+        nd->type = NdEnumeratorDef::StructFields;
         do {
           Token* mb_name = expect_ident();
           expect(":");
@@ -669,7 +735,7 @@ namespace fire {
       auto type = ps_type_name();
 
       if (eat(",")) {
-        nd->is_type_names = true;
+        nd->type = NdEnumeratorDef::MultipleTypes;
         nd->multiple.push_back(type);
         do {
           nd->multiple.emplace_back(ps_type_name());
@@ -678,13 +744,12 @@ namespace fire {
         return nd;
       }
 
-      nd->is_one_type = true;
-      nd->variant_type = type;
+      nd->type = NdEnumeratorDef::OneType;
+      nd->variant = type;
       expect(")");
       return nd;
     }
 
-    nd->is_no_variants = true;
     return nd;
   }
 
@@ -698,10 +763,14 @@ namespace fire {
 
     expect("{");
 
-    if (eat("}")) { throw err::empty_class_or_enum_is_not_valid(*tok); }
+    if (eat("}")) {
+      throw err::empty_class_or_enum_is_not_valid(*tok);
+    }
 
     do {
-      nd->enumerators.emplace_back(ps_enumerator_def());
+      auto E = nd->enumerators.emplace_back(ps_enumerator_def());
+
+      E->parent_enum_node = nd;
     } while (!is_end() && eat(","));
 
     expect("}");
@@ -712,30 +781,37 @@ namespace fire {
   NdNamespace* Parser::ps_namespace() {
     Token* tok = expect("namespace");
 
-    std::string name = expect_ident()->text;
+    std::string name {expect_ident()->text};
 
     NdNamespace* ns = new NdNamespace(*tok, name);
 
     Token* scope_tok = expect("{");
 
-    if (eat("}")) return ns;
+    if (eat("}"))
+      return ns;
 
     while (!is_end()) {
 
       ns->items.emplace_back(ps_mod_item());
 
-      if (eat("}")) return ns;
+      if (eat("}"))
+        return ns;
     }
 
     throw err::scope_not_terminated(*scope_tok);
   }
 
   Node* Parser::ps_mod_item() {
-    if (look("var")) return ps_let();
-    if (look("fn")) return ps_function();
-    if (look("class")) return ps_class();
-    if (look("enum")) return ps_enum();
-    if (look("namespace")) return ps_namespace();
+    if (look("var"))
+      return ps_let();
+    if (look("fn"))
+      return ps_function();
+    if (look("class"))
+      return ps_class();
+    if (look("enum"))
+      return ps_enum();
+    if (look("namespace"))
+      return ps_namespace();
 
     throw err::expected_item_of_module(*cur);
   }
@@ -762,12 +838,14 @@ namespace fire {
 
     auto import_token = cur;
 
-    std::string path = expect_ident()->text;
+    std::string path{expect_ident()->text};
 
     while (!is_end() && eat("::")) {
       path += "/";
 
-      if (eat("*")) { todo; }
+      if (eat("*")) {
+        todo;
+      }
 
       path += expect_ident()->text;
     }
@@ -776,7 +854,8 @@ namespace fire {
 
     try {
       ps_do_import(import_token, std::filesystem::absolute(source.get_folder() + path).string());
-    } catch (err::parses::cannot_open_file e) {
+    }
+    catch (err::parses::cannot_open_file& e) {
       auto fol = FileSystem::GetFolderOfFile(source.path);
 
       while (true) {
@@ -809,7 +888,8 @@ namespace fire {
     }
 
     for (auto&& src : source.imports) {
-      if (src->is_node_imported) continue;
+      if (src->is_node_imported)
+        continue;
 
       auto submod = src->parse();
 
@@ -821,7 +901,9 @@ namespace fire {
     }
 
     while (!is_end()) {
-      if (look("import")) { throw err::parses::import_not_allowed_here(*cur); }
+      if (look("import")) {
+        throw err::parses::import_not_allowed_here(*cur);
+      }
 
       auto item = mod->items.emplace_back(ps_mod_item());
 
@@ -864,10 +946,52 @@ namespace fire {
       }
     }
 
-    if (flag) goto __begin__;
+    if (flag)
+      goto __begin__;
 
     for (auto&& x : items) {
-      if (x->is(NodeKind::Namespace)) merge_namespaces(x->as<NdNamespace>()->items);
+      if (x->is(NodeKind::Namespace))
+        merge_namespaces(x->as<NdNamespace>()->items);
+    }
+  }
+
+  void Parser::reorder_items(std::vector<Node*>& items) {
+    // move all enums at first
+
+    std::vector<Node*> _new;
+
+    for (auto&& x : items)
+      if (x->is(NodeKind::Let)) {
+        _new.push_back(x);
+      }
+
+    for (auto&& x : items)
+      if (x->is(NodeKind::Namespace)) {
+        _new.push_back(x);
+      }
+
+    for (auto&& x : items)
+      if (x->is(NodeKind::Enum)) {
+        _new.push_back(x);
+      }
+
+    for (auto&& x : items)
+      if (x->is(NodeKind::Class)) {
+        _new.push_back(x);
+      }
+
+    for (auto&& x : items)
+      if (x->is(NodeKind::Function)) {
+        _new.push_back(x);
+      }
+
+    items = std::move(_new);
+
+    for (auto&& x : items) {
+      if (x->is(NodeKind::Namespace))
+        reorder_items(x->as<NdNamespace>()->items);
+      else if (x->is(NodeKind::Module))
+        reorder_items(x->as<NdModule>()->items);
     }
   }
 
@@ -875,6 +999,8 @@ namespace fire {
     auto mod = ps_mod();
 
     merge_namespaces(mod->items);
+
+    reorder_items(mod->items);
 
     return mod;
   }

@@ -1,5 +1,6 @@
 #include "Utils.hpp"
 #include "Object.hpp"
+#include "strconv.h"
 
 namespace fire {
   ObjNone* Object::none = new ObjNone();
@@ -18,11 +19,13 @@ namespace fire {
     case TypeKind::Bool:
       return as<ObjBool>()->val ? "true" : "false";
 
-    case TypeKind::Char:
-      return to_utf8(std::u16string(1, as<ObjChar>()->val));
+    case TypeKind::Char: {
+      char16_t buf[2]{as<ObjChar>()->val,0};
+      return utf16_to_utf8_cpp(buf);
+    }
 
     case TypeKind::String:
-      return to_utf8(as<ObjString>()->val);
+      return utf16_to_utf8_cpp(as<ObjString>()->val.data());
 
     default:
       todoimpl;
