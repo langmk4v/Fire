@@ -20,8 +20,8 @@ SOURCE_DIR		:=	\
 				src/Utils \
 				src/VM
 
-CC			:=	clang
-CXX			:=	clang++
+CC			:=	gcc
+CXX			:=	g++
 
 EXT_ASM		:=	.s
 EXT_C		:=	.c
@@ -37,7 +37,7 @@ COMMONFLAGS		:=	\
 	$(FLAGS_WARN) \
 	$(foreach d,$(FLAGS_DEFINE),-D$(d))
 
-FLAGS_C			:=	$(COMMONFLAGS) -std=c23
+FLAGS_C			:=	$(COMMONFLAGS) -std=c2x
 FLAGS_CXX		:=	$(COMMONFLAGS) -std=c++17 -Wno-packed-non-pod
 FLAGS_LD		:=	-Wl,--gc-sections,-s -fuse=mold -fsanitize=leak
 

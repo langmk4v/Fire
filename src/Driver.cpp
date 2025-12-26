@@ -101,7 +101,7 @@ namespace fire {
       catch (int n) {
         printf("%d\n", n);
       }
-      catch (err::e e) {
+      catch (err::e& e) {
         e.print();
       }
     }

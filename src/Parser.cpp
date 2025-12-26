@@ -854,7 +854,8 @@ namespace fire {
 
     try {
       ps_do_import(import_token, std::filesystem::absolute(source.get_folder() + path).string());
-    } catch (err::parses::cannot_open_file e) {
+    }
+    catch (err::parses::cannot_open_file& e) {
       auto fol = FileSystem::GetFolderOfFile(source.path);
 
       while (true) {
