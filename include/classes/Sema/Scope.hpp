@@ -93,6 +93,10 @@ namespace fire {
     SymbolTable fields;
     SymbolTable methods;
 
+    NdClass* get_node() {
+      return node->as<NdClass>();
+    }
+
     SCClass(NdClass* node, Scope* parent);
   };
 

@@ -26,18 +26,7 @@ namespace fire {
         auto sym = node->as<NdSymbol>();
         auto result = S.find_symbol(sym, ctx);
 
-        if (ignore_errors) {
-          if (result.hits.size() == 1) { sym->symbol_ptr = result.hits[0]; }
-          break;
-        }
-
-        if (result.hits.empty()) {
-          throw err::use_of_undefined_symbol(sym->token);
-        } else if (result.hits.size() >= 2) {
-          throw err::ambiguous_symbol_name(sym->token);
-        } else {
-          sym->symbol_ptr = result.hits[0];
-        }
+        if (result.hits.size() == 1) { sym->symbol_ptr = result.hits[0]; }
 
         break;
       }
@@ -86,29 +75,6 @@ namespace fire {
 
       case NodeKind::CallFunc: {
         auto call = node->as<NdCallFunc>();
-
-        bool is_construction = false;
-
-        if (eval_types) {
-          ctx.as_callee_of_callfunc = true;
-          ctx.parent_cf_nd = call;
-
-          TypeInfo callee_ty = S.eval_expr_ty(call->callee, ctx);
-
-          ctx.as_callee_of_callfunc = false;
-          ctx.as_arg_of_callfunc = true;
-
-          std::vector<TypeInfo> arg_tys;
-
-          for (auto& arg : call->args) {
-            arg_tys.push_back(S.eval_expr_ty(arg, ctx));
-          }
-
-          ctx.as_arg_of_callfunc = false;
-          ctx.parent_cf_nd = nullptr;
-
-          todo;
-        }
 
         on_expr(call->callee, ctx);
 

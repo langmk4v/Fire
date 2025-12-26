@@ -17,7 +17,6 @@ namespace fire {
     Char,
     String,
     Vector,
-    Array,
     Tuple,
     Dict,
     Function,

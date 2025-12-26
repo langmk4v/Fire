@@ -43,12 +43,11 @@ namespace fire {
 
     NameResolver resolver(*this);
 
-    resolver.ignore_errors = true;
-    resolver.on_module(mod, {.cur_scope = root_scope});
+    resolver.on_module(mod, {});
 
-    resolver.ignore_errors = false;
-    resolver.eval_types = true;
-    resolver.on_module(mod, {.cur_scope = root_scope});
+    TypeChecker checker(*this);
+
+    checker.check_module(mod, {});
 
     infer_types(mod);
 

@@ -8,15 +8,13 @@
 
 /*
 
-1. 名前解決 (1)
+1. 名前解決
    - わかる範囲のみ・型評価はしない・エラーは出さない
 
-2  名前解決 (2)
-   - 型評価を含む・エラーは出す
-
-3. 型チェック
+2. 型チェック
    - 型の一致確認
    - 型推論
+   - (1) で名前解決できなかった部分を解決する
 
 4. 文をチェック
    - return, break, continue が使えるかどうか
@@ -41,11 +39,17 @@ namespace fire {
   struct NdVisitorContext {
     Node* node = nullptr;
 
+    //
+    // Location infos
     Scope* cur_scope = nullptr;
-
     SCClass* cur_class = nullptr;
-
     SCFunction* cur_func = nullptr;
+    bool in_method = false;
+
+    //
+    // element-type of empty-array
+    TypeInfo* empty_array_element_type = nullptr;
+    bool can_use_empty_array = false;
 
     int loop_depth = 0;
 
@@ -66,10 +70,6 @@ namespace fire {
 
     Sema& S;
 
-    bool ignore_errors = false;
-
-    bool eval_types = false;
-
   public:
     NameResolver(Sema& S) : S(S) {
     }
@@ -86,6 +86,30 @@ namespace fire {
     void on_enum(Node* node, NdVisitorContext ctx);
     void on_namespace(Node* node, NdVisitorContext ctx);
     void on_module(Node* node, NdVisitorContext ctx);
+  };
+
+  class TypeChecker {
+    friend class Sema;
+
+    Sema& S;
+
+  public:
+    TypeChecker(Sema& S) : S(S) {
+    }
+
+    TypeInfo eval_expr_ty(Node* node, NdVisitorContext ctx);
+    TypeInfo eval_typename_ty(NdSymbol* node, NdVisitorContext ctx);
+
+    TypeInfo make_class_type(NdClass* node);
+
+    void check_expr(Node* node, NdVisitorContext ctx);
+    void check_stmt(Node* node, NdVisitorContext ctx);
+    void check_scope(NdScope* node, NdVisitorContext ctx);
+    void check_function(NdFunction* node, NdVisitorContext ctx);
+    void check_class(NdClass* node, NdVisitorContext ctx);
+    void check_enum(NdEnum* node, NdVisitorContext ctx);
+    void check_namespace(NdNamespace* node, NdVisitorContext ctx);
+    void check_module(NdModule* node, NdVisitorContext ctx);
   };
 
   struct SymbolFindResult {
@@ -117,10 +141,6 @@ namespace fire {
 
   private:
     Sema();
-
-    TypeInfo eval_expr_ty(Node* node, NdVisitorContext ctx);
-
-    TypeInfo eval_typename_ty(NdSymbol* node, NdVisitorContext ctx);
 
     SymbolFindResult find_symbol(NdSymbol* node, NdVisitorContext ctx);
   };

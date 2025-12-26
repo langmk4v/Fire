@@ -22,8 +22,8 @@ namespace fire {
 
   std::string TypeInfo::to_string() const {
     static char const* names[]{
-        "none",   "int", "float", "usize", "bool", "char",
-        "string", "Vec", "Array", "tuple", "dict", "functor",
+        "none",   "int", "float", "usize", "bool",    "char",
+        "string", "Vec", "tuple", "dict",  "functor",
     };
 
     std::string str;
