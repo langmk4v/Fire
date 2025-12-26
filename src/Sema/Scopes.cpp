@@ -39,7 +39,6 @@ namespace fire {
     for (auto item : node->items) {
       switch (item->kind) {
         case NodeKind::Let: {
-
           auto let = item->as<NdLet>();
 
           for (auto s : symtable.symbols) {
@@ -50,7 +49,6 @@ namespace fire {
             }
           }
 
-          alert;
           let->symbol_ptr =
               symtable.append(variables.append(Sema::get_instance().new_variable_symbol(let)));
 
@@ -143,6 +141,8 @@ namespace fire {
     for (auto& arg : node->args) {
       auto a = arguments.append(Sema::get_instance().new_variable_symbol(&arg.name, arg.name.text));
       symtable.append(a);
+
+      arg.var_info_ptr = a->var_info;
     }
 
     body = new SCScope(node->body, this);
@@ -208,8 +208,11 @@ namespace fire {
 
     for (auto& item : node->items) {
       if (item->is(NodeKind::Let)) {
-        auto s = variables.append(Sema::get_instance().new_variable_symbol(item->as<NdLet>()));
+        auto let = item->as<NdLet>();
+        auto s = variables.append(Sema::get_instance().new_variable_symbol(let));
         symtable.append(s);
+        let->symbol_ptr = s;
+        assert(let->symbol_ptr);
       } else {
         auto scope = Scope::from_node(item, this);
         symtable.append(&scope->symbol);

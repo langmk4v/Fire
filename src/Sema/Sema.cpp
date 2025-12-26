@@ -19,6 +19,7 @@ namespace fire {
     {"char", TypeKind::Char},
     {"string", TypeKind::String},
     {"Vec", TypeKind::Vector},
+    {"List", TypeKind::List},
     {"tuple", TypeKind::Tuple},
     {"dict", TypeKind::Dict},
     {"functor", TypeKind::Function},
@@ -29,7 +30,9 @@ namespace fire {
   }
 
   Sema& Sema::get_instance() {
-    if (!__inst) { __inst = new Sema(); }
+    if (!__inst) {
+      __inst = new Sema();
+    }
     return *__inst;
   }
 
@@ -42,14 +45,18 @@ namespace fire {
 
     NameResolver resolver(*this);
 
+    alert;
     resolver.on_module(mod, {});
 
     TypeChecker checker(*this);
 
+    alert;
     checker.check_module(mod, {});
 
+    alert;
     infer_types(mod);
 
+    alert;
     check_semantics(mod);
   }
 
@@ -93,10 +100,13 @@ namespace fire {
 
     for (auto scope = ctx.cur_scope; scope; scope = scope->parent) {
       for (auto& symbol : scope->symtable.symbols) {
-        if (symbol->name == node->name.text) { result.hits.push_back(symbol); }
+        if (symbol->name == node->name.text) {
+          result.hits.push_back(symbol);
+        }
       }
 
-      if (result.hits.size() >= 1) break;
+      if (result.hits.size() >= 1)
+        break;
     }
 
     if (result.hits.empty()) {
@@ -117,7 +127,9 @@ namespace fire {
 
     if (node->next) {
 
-      if (result.hits.size() >= 2) { throw err::ambiguous_symbol_name(node->token); }
+      if (result.hits.size() >= 2) {
+        throw err::ambiguous_symbol_name(node->token);
+      }
 
       ctx.cur_scope = result.hits[0]->scope;
 

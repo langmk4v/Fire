@@ -16,6 +16,7 @@ namespace fire {
     Char,
     String,
     Vector,
+    List,
     Tuple,
     Dict,
     Function,
@@ -53,10 +54,16 @@ namespace fire {
     std::string to_string() const;
 
     static int required_param_count(TypeKind K) {
-      if (K == TypeKind::Vector) return 1;    // <element_type>
-      if (K == TypeKind::Tuple) return -1;    // <...>
-      if (K == TypeKind::Dict) return 2;      // <key, value>
-      if (K == TypeKind::Function) return -1; // <result_type, args...>
+      if (K == TypeKind::Vector)
+        return 1; // <element_type>
+      if (K == TypeKind::List)
+        return 1; // <element_type>
+      if (K == TypeKind::Tuple)
+        return -1; // <...>
+      if (K == TypeKind::Dict)
+        return 2; // <key, value>
+      if (K == TypeKind::Function)
+        return -1; // <result_type, args...>
 
       return 0; // Not template!
     }

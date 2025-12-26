@@ -2,7 +2,7 @@ import Token;
 import SourceFile;
 
 namespace firec {
-    var lexer_punctuator_table : Array<(string, TokenPunctuators)> = [
+    var lexer_punctuator_table : Vec<(string, TokenPunctuators)> = [
         ("+",   TokenPunctuators::Plus),
         ("-",   TokenPunctuators::Minus)
     ];
@@ -59,7 +59,7 @@ namespace firec {
 
         fn find_punct(self) -> Option<(string, TokenPunctuators)> {
             for pair in lexer_punctuator_table {
-                if self.eat(pair.0) {
+                if self.eat(pair.<0>) {
                     return pair;
                 }
             }

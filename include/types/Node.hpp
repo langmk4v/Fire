@@ -136,11 +136,11 @@ namespace fire {
     }
 
     bool is_expr() const {
-      return kind >= NodeKind::Mul && kind <= NodeKind::Assign;
+      return kind >= NodeKind::Mul && kind <= NodeKind::AssignWithOp;
     }
 
     bool is_expr_full() const {
-      return kind <= NodeKind::Assign;
+      return kind <= NodeKind::AssignWithOp;
     };
 
     virtual ~Node() {

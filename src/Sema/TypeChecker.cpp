@@ -22,7 +22,7 @@ namespace fire {
         auto sym = node->as<NdSymbol>();
 
         if (!sym->symbol_ptr) {
-          throw err::use_of_undefined_symbol(sym->token);
+          throw err::use_of_undefined_symbol(sym->name);
           todo;
         }
 
@@ -110,7 +110,7 @@ namespace fire {
           }
         }
 
-        node->ty = TypeInfo(TypeKind::Vector, std::move(elems), false, false);
+        node->ty = TypeInfo(TypeKind::Vector, {std::move(elems[0])}, false, false);
         break;
       }
 
@@ -347,12 +347,14 @@ namespace fire {
         auto sym = node->as<NdSymbol>();
 
         if (!sym->symbol_ptr) {
+          debug(err::e(node->token, "sym->symbol_ptr is null").print());
           todo;
         }
 
         switch (sym->symbol_ptr->kind) {
-          case SymbolKind::Enum:
-            todo;
+          case SymbolKind::Enum: {
+            return make_enum_type(sym->symbol_ptr->node->as<NdEnum>());
+          }
 
           case SymbolKind::Class:
             todo;
@@ -426,7 +428,6 @@ namespace fire {
 
   void TypeChecker::check_expr(Node* node, NdVisitorContext ctx) {
     assert(node->is_expr_full());
-
     eval_expr_ty(node, ctx);
   }
 
@@ -458,6 +459,55 @@ namespace fire {
 
         break;
       }
+
+      case NodeKind::If: {
+        todo;
+      }
+
+      case NodeKind::Match: {
+        todo;
+      }
+
+      case NodeKind::For: {
+        auto for_ = node->as<NdFor>();
+        auto cs = ctx.cur_scope;
+
+        ctx.loop_depth++;
+        ctx.cur_scope = for_->scope_ptr;
+
+        check_expr(for_->iterable, ctx);
+        check_scope(for_->body, ctx);
+
+        ctx.cur_scope = cs;
+        ctx.loop_depth--;
+
+        break;
+      }
+
+      case NodeKind::While: {
+        todo;
+      }
+
+      case NodeKind::Loop: {
+        todo;
+      }
+
+      case NodeKind::Break: {
+        todo;
+      }
+
+      case NodeKind::Continue: {
+        todo;
+      }
+
+      case NodeKind::Return: {
+        todo;
+      }
+
+      default:
+        assert(node->is_expr_full());
+        check_expr(node, ctx);
+        break;
     }
   }
 
@@ -466,19 +516,12 @@ namespace fire {
 
     for (auto& item : node->items) {
       switch (item->kind) {
-        case NodeKind::Let:
-        case NodeKind::If:
-        case NodeKind::Match:
-        case NodeKind::For:
-        case NodeKind::While:
-        case NodeKind::Loop:
-          check_stmt(item, ctx);
-          break;
         case NodeKind::Scope:
           check_scope(item->as<NdScope>(), ctx);
           break;
+
         default:
-          check_expr(item, ctx);
+          check_stmt(item, ctx);
           break;
       }
     }
@@ -491,6 +534,9 @@ namespace fire {
     for (auto& arg : node->args) {
       arg.type->ty = eval_typename_ty(arg.type, ctx);
       arg.type->ty_evaluated = true;
+
+      arg.var_info_ptr->type = arg.type->ty;
+      arg.var_info_ptr->is_type_deducted = true;
     }
 
     if (node->result_type) {

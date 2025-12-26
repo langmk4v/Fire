@@ -26,6 +26,9 @@ namespace fire {
           sym->symbol_ptr = result.hits[0];
         }
 
+        for (auto template_param : sym->te_args)
+          on_typename(template_param, ctx);
+
         break;
       }
 
@@ -196,8 +199,12 @@ namespace fire {
       case NodeKind::For: {
         auto x = node->as<NdFor>();
         ctx.loop_depth++;
+        auto cs = ctx.cur_scope;
+        ctx.cur_scope = x->scope_ptr;
         on_expr(x->iterable, ctx);
         on_stmt(x->body, ctx);
+        ctx.loop_depth--;
+        ctx.cur_scope = cs;
         break;
       }
 
