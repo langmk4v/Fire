@@ -64,6 +64,10 @@ namespace fire {
     Punct_BitAnd, // &
     Punct_BitOr,  // |
     Punct_BitXor, // ^
+    
+    // other
+    Punct_Inclement, // ++
+    Punct_Declement, // --
 
     // misc
     Punct_RightArrow,   // ->

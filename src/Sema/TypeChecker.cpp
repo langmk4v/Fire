@@ -300,7 +300,7 @@ namespace fire {
         if (!obj_ty.is(TypeKind::Tuple)) {
           throw err::mismatched_types(ge->token, "tuple", obj_ty.to_string());
         }
-        if (ge->index < 0 || ge->index >= obj_ty.parameters.size()) {
+        if (ge->index < 0 || ge->index >= (int)obj_ty.parameters.size()) {
           err::emitters::tuple_getter_index_out_of_range(*ge->index_tok, ge->expr->token,
                                                          obj_ty.to_string(), ge->index,
                                                          obj_ty.parameters.size());

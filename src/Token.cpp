@@ -39,6 +39,8 @@ namespace fire {
     { TokenPunctuators::Punct_LShift, "<<" },
     { TokenPunctuators::Punct_RShift, ">>" },
     { TokenPunctuators::Punct_ScopeResol, "::" },
+    { TokenPunctuators::Punct_Inclement, "++" },
+    { TokenPunctuators::Punct_Declement, "--" },
 
     // -- 1 char --
     { TokenPunctuators::Punct_Assign, "=" },

@@ -24,8 +24,9 @@ namespace fire {
     pass_space();
 
     while (!is_end()) {
-      if(match("//")) { pass_line_comment(); continue; }
-      if(match("/*")) { pass_block_comment(); continue; }  
+      while(match("//")) { pass_line_comment(); }
+      while(match("/*")) { pass_block_comment(); }  
+      pass_space();
       cur = tokenize(peek(), cur);
     }
 
@@ -33,7 +34,7 @@ namespace fire {
 
     size_t i = 0, line = 1, col = 1;
 
-    for (Token* t = head.next; t = t->next;) {
+    for (Token* t = head.next; (t = t->next);) {
       for (; i < t->pos; i++, col++)
         if (get_char(i) == '\n') line++, col = 0;
       t->line = line;
