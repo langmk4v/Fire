@@ -3,7 +3,7 @@
 #include "Utils.hpp"
 #include "Error.hpp"
 
-#include "Sema/Sema.hpp"
+#include "Sema.hpp"
 
 namespace fire {
 

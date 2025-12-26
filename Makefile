@@ -38,7 +38,7 @@ COMMONFLAGS		:=	\
 	$(foreach d,$(FLAGS_DEFINE),-D$(d))
 
 FLAGS_C			:=	$(COMMONFLAGS) -std=c2x
-FLAGS_CXX		:=	$(COMMONFLAGS) -std=c++17 -Wno-packed-non-pod
+FLAGS_CXX		:=	$(COMMONFLAGS) -std=c++17
 FLAGS_LD		:=	-Wl,--gc-sections,-s -fuse=mold -fsanitize=leak
 
 %.o: %$(EXT_ASM)

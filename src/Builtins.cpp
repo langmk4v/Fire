@@ -34,7 +34,7 @@ namespace fire {
   IMPL(string_starts) {
     ObjString* self = args[0]->as<ObjString>();
     ObjString* prefix = args[1]->as<ObjString>();
-    return new ObjBool(std::memcmp(self->val.data(), prefix->val.data(), prefix->val.length() * sizeof(char16_t)) == 0);
+    return new ObjBool(std::memcmp(self->data.data(), prefix->data.data(), prefix->data.size() * sizeof(char16_t)) == 0);
   }
 
   BuiltinFunc blt_print{

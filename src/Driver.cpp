@@ -8,7 +8,7 @@
 #include "Lexer.hpp"
 #include "Token.hpp"
 #include "Parser.hpp"
-#include "Sema/Sema.hpp"
+#include "Sema.hpp"
 #include "Driver.hpp"
 #include "Error.hpp"
 

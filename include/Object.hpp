@@ -70,6 +70,12 @@ namespace fire {
     ObjString& append(ObjString*);
     
     Object* clone() const override { return new ObjString(data); }
+
+    static ObjString* from_char16_ptr_move(char16_t* p) {
+      auto x = new ObjString();
+      for(;*p;p++)x->data.push_back(*p);
+      return x;
+    }
     
     ObjString():Object(TypeKind::String){}
     ObjString(std::vector<char16_t> const& s) : Object(TypeKind::String), data(s) {}

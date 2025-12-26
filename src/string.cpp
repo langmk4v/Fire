@@ -64,6 +64,7 @@ namespace fire {
     _check_buf_size(1);
     _buffer[_length] = c;
     _length++;
+    return *this;
   }
 
   string& string::append_str(string const& s) {

@@ -1,7 +1,7 @@
 #include "Utils.hpp"
 #include "Error.hpp"
 #include "Node.hpp"
-#include "Sema/Sema.hpp"
+#include "Sema.hpp"
 
 #define PRINT_LOCATION(TOK) (err::e(TOK, "node").print())
 
