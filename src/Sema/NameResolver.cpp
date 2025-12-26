@@ -26,17 +26,18 @@ namespace fire {
         auto sym = node->as<NdSymbol>();
         auto result = S.find_symbol(sym, ctx);
 
-        if (result.hits.empty()) {
-          if (result.previous)
-            throw err::use_of_undefined_symbol(sym->token, result.previous->name.text,
-                                               result.node->name.text);
-
-          throw err::use_of_undefined_symbol(sym->token);
+        if (ignore_errors) {
+          if (result.hits.size() == 1) { sym->symbol_ptr = result.hits[0]; }
+          break;
         }
 
-        if (result.hits.size() >= 2) { throw err::ambiguous_symbol_name(sym->token); }
-
-        sym->symbol_ptr = result.hits[0];
+        if (result.hits.empty()) {
+          throw err::use_of_undefined_symbol(sym->token);
+        } else if (result.hits.size() >= 2) {
+          throw err::ambiguous_symbol_name(sym->token);
+        } else {
+          sym->symbol_ptr = result.hits[0];
+        }
 
         break;
       }
@@ -49,7 +50,6 @@ namespace fire {
       }
 
       case NodeKind::Self: {
-        if (!ctx.cur_func) { throw err::semantics::cannot_use_self_here(node->token); }
         break;
       }
 
@@ -76,16 +76,45 @@ namespace fire {
 
       case NodeKind::MemberAccess: {
         auto mem = node->as<NdExpr>();
+
         on_expr(mem->lhs, ctx);
+
         on_expr(mem->rhs, ctx);
+
         break;
       }
 
       case NodeKind::CallFunc: {
         auto call = node->as<NdCallFunc>();
+
+        bool is_construction = false;
+
+        if (eval_types) {
+          ctx.as_callee_of_callfunc = true;
+          ctx.parent_cf_nd = call;
+
+          TypeInfo callee_ty = S.eval_expr_ty(call->callee, ctx);
+
+          ctx.as_callee_of_callfunc = false;
+          ctx.as_arg_of_callfunc = true;
+
+          std::vector<TypeInfo> arg_tys;
+
+          for (auto& arg : call->args) {
+            arg_tys.push_back(S.eval_expr_ty(arg, ctx));
+          }
+
+          ctx.as_arg_of_callfunc = false;
+          ctx.parent_cf_nd = nullptr;
+
+          todo;
+        }
+
         on_expr(call->callee, ctx);
+
         for (auto& arg : call->args)
           on_expr(arg, ctx);
+
         break;
       }
 
@@ -188,7 +217,8 @@ namespace fire {
 
       case NodeKind::If: {
         auto x = node->as<NdIf>();
-        on_expr(x->cond, ctx);
+        if (x->vardef) on_stmt(x->vardef, ctx);
+        if (x->cond) on_expr(x->cond, ctx);
         on_stmt(x->thencode, ctx);
         if (x->elsecode) on_stmt(x->elsecode, ctx);
         break;
@@ -205,7 +235,8 @@ namespace fire {
       case NodeKind::While: {
         auto x = node->as<NdWhile>();
         ctx.loop_depth++;
-        on_expr(x->cond, ctx);
+        if (x->vardef) on_stmt(x->vardef, ctx);
+        if (x->cond) on_expr(x->cond, ctx);
         on_stmt(x->body, ctx);
         break;
       }

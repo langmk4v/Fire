@@ -241,6 +241,7 @@ namespace fire {
 
     if (eat("--")) { return new NdDeclement(tok, ps_subscript(), true); }
 
+    /*
     if (eat("new")) {
       auto node = new NdNew(tok);
       node->type = ps_type_name();
@@ -251,7 +252,7 @@ namespace fire {
         expect(")");
       }
       return node;
-    }
+    }*/
 
     if (eat("delete")) { todoimpl; }
 

@@ -8,9 +8,11 @@
 
 /*
 
-1. シンボル定義情報を収集
+1. 名前解決 (1)
+   - わかる範囲のみ・型評価はしない・エラーは出さない
 
-2. 名前の参照の解決
+2  名前解決 (2)
+   - 型評価を含む・エラーは出す
 
 3. 型チェック
    - 型の一致確認
@@ -24,7 +26,6 @@
    - 型に対して演算子が使用可能か
 
 6. 制御フローの確認
-
 
 */
 
@@ -49,18 +50,25 @@ namespace fire {
     int loop_depth = 0;
 
     TypeInfo* expected_type = nullptr;
-  };
 
-  struct SymbolFindResult {
-    NdSymbol* node = nullptr;
-    NdSymbol* previous = nullptr; // "a" of "a::b"
-    std::vector<Symbol*> hits = {};
+    // expression-types
+    bool as_typename = false;
+    bool as_callee_of_callfunc = false;
+
+    bool as_arg_of_callfunc = false;
+    NdCallFunc* parent_cf_nd = nullptr;
   };
 
   class Sema;
 
   class NameResolver {
+    friend class Sema;
+
     Sema& S;
+
+    bool ignore_errors = false;
+
+    bool eval_types = false;
 
   public:
     NameResolver(Sema& S) : S(S) {
@@ -78,6 +86,12 @@ namespace fire {
     void on_enum(Node* node, NdVisitorContext ctx);
     void on_namespace(Node* node, NdVisitorContext ctx);
     void on_module(Node* node, NdVisitorContext ctx);
+  };
+
+  struct SymbolFindResult {
+    NdSymbol* node = nullptr;
+    NdSymbol* previous = nullptr; // "a" of "a::b"
+    std::vector<Symbol*> hits = {};
   };
 
   class Sema {

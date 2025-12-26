@@ -123,7 +123,8 @@ namespace fire {
     };
 
     for (auto& arg : node->args) {
-      arguments.append(Sema::get_instance().new_variable_symbol(&arg.name, arg.name.text));
+      auto a = arguments.append(Sema::get_instance().new_variable_symbol(&arg.name, arg.name.text));
+      symtable.append(a);
     }
 
     body = new SCScope(node->body, this);

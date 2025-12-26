@@ -14,6 +14,7 @@ namespace fire {
     {"none", TypeKind::None},
     {"int", TypeKind::Int},
     {"float", TypeKind::Float},
+    {"usize", TypeKind::USize},
     {"bool", TypeKind::Bool},
     {"char", TypeKind::Char},
     {"string", TypeKind::String},
@@ -41,6 +42,12 @@ namespace fire {
     root_scope = new SCModule(mod, nullptr);
 
     NameResolver resolver(*this);
+
+    resolver.ignore_errors = true;
+    resolver.on_module(mod, {.cur_scope = root_scope});
+
+    resolver.ignore_errors = false;
+    resolver.eval_types = true;
     resolver.on_module(mod, {.cur_scope = root_scope});
 
     infer_types(mod);
@@ -78,18 +85,6 @@ namespace fire {
     symbol->var_info = new VariableInfo();
 
     return symbol;
-  }
-
-  TypeInfo Sema::eval_expr_ty(Node* node, NdVisitorContext ctx) {
-    (void)node;
-    (void)ctx;
-    todo;
-  }
-
-  TypeInfo Sema::eval_typename_ty(NdSymbol* node, NdVisitorContext ctx) {
-    (void)node;
-    (void)ctx;
-    todo;
   }
 
   SymbolFindResult Sema::find_symbol(NdSymbol* node, NdVisitorContext ctx) {

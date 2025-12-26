@@ -12,6 +12,7 @@ namespace fire {
     None,
     Int,
     Float,
+    USize,
     Bool,
     Char,
     String,
