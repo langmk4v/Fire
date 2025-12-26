@@ -305,7 +305,7 @@ namespace fire {
         if (ge->index < 0 || ge->index >= (int)obj_ty.parameters.size()) {
           err::emitters::tuple_getter_index_out_of_range(*ge->index_tok, ge->expr->token,
                                                          obj_ty.to_string(), ge->index,
-                                                         obj_ty.parameters.size());
+                                                         (int)obj_ty.parameters.size());
         }
         node->ty = obj_ty.parameters[ge->index];
         break;
@@ -581,6 +581,8 @@ namespace fire {
   void TypeChecker::check_function(NdFunction* node, NdVisitorContext ctx) {
 
     auto fn_scope = node->scope_ptr->as<SCFunction>();
+
+    (void)fn_scope;
 
     for (auto& arg : node->args) {
       arg.type->ty = eval_typename_ty(arg.type, ctx);

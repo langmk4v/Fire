@@ -232,7 +232,7 @@ namespace fire {
           if (cur->kind != TokenKind::Int) {
             throw err::expected_but_found(*cur, "int");
           }
-          x = new NdGetTupleElement(tok, x, atol(cur->text.data()));
+          x = new NdGetTupleElement(tok, x, std::atoi(cur->text.data()));
           x->as<NdGetTupleElement>()->index_tok = cur;
           next();
           expect(">");

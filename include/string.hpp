@@ -8,7 +8,7 @@ namespace fire {
     size_t _length;
     size_t _buf_size;
 
-    void _check_buf_size(int want_add_size);
+    void _check_buf_size(size_t want_add_size);
 
   public:
     string();

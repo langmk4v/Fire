@@ -64,7 +64,7 @@ namespace fire {
         auto tok = source->lex();
 
         if (opt_print_tokens) {
-          for(Token*t=source->lexed_token;t;t=t->next)
+          for(Token*t=tok;t;t=t->next)
             std::cout<<t->text<<" ";
           std::cout<<std::endl;
         }

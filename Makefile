@@ -28,7 +28,7 @@ EXT_C		:=	.c
 EXT_CXX		:=	.cpp
 
 FLAGS_OPTIMIZE	:=	-O3
-FLAGS_WARN		:=	-Wall -Wextra -Wno-switch -Wno-unused-variable
+FLAGS_WARN		:=	-Wall -Wextra -Wconversion -Wno-switch
 FLAGS_DEFINE	:=
 
 COMMONFLAGS		:=	\
@@ -39,7 +39,7 @@ COMMONFLAGS		:=	\
 
 FLAGS_C			:=	$(COMMONFLAGS) -std=c2x
 FLAGS_CXX		:=	$(COMMONFLAGS) -std=c++17
-FLAGS_LD		:=	-Wl,--gc-sections,-s -fuse=mold -fsanitize=leak
+FLAGS_LD		:=	-Wl,--gc-sections,-s -fuse=mold -fsanitize=leak,address,undefined
 
 %.o: %$(EXT_ASM)
 	@echo "\e[1m\e[32mCOMPILE \e[37m$<\e[0m ..."

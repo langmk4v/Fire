@@ -4,7 +4,7 @@
 #define FIRST_BUFFER_SIZE 0x100
 
 namespace fire {
-  void string::_check_buf_size(int want_add_size) {
+  void string::_check_buf_size(size_t want_add_size) {
     if (_length + want_add_size < _buf_size)
       return;
 
