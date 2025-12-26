@@ -208,12 +208,17 @@ namespace fire {
           expect("]");
         }
       } else if (eat(".")) {
-        auto right = ps_factor();
-
-        if (right->kind == NodeKind::Value && right->token.kind == TokenKind::Int) {
-          x = new NdGetTupleElement(tok, x, std::stoll(right->token.text));
-          break;
+        // get tuple element:
+        // a.<N>
+        if (eat("<")) {
+          if (cur->kind != TokenKind::Int) { throw err::expected_but_found(*cur, "int"); }
+          x = new NdGetTupleElement(tok, x, std::stoll(cur->text));
+          cur++;
+          expect(">");
+          return x;
         }
+
+        auto right = ps_factor();
 
         if (auto rr = right->as<NdCallFunc>(); right->is(NodeKind::CallFunc)) {
           rr->is_method_call = true;

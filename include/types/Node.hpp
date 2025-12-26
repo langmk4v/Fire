@@ -164,6 +164,8 @@ namespace fire {
     Object* obj = nullptr;
     NdValue(Token& t) : Node(NodeKind::Value, t) {
     }
+    NdValue(Token& t, Object* obj) : Node(NodeKind::Value, t), obj(obj) {
+    }
   };
 
   struct NdDeclType : Node {
