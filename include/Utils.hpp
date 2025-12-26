@@ -68,9 +68,6 @@ namespace fire {
 
   struct Node;
 
-  std::string to_utf8(std::u16string const& s);
-  std::u16string to_utf16(std::string const& s);
-
   std::string node2s(Node* node);
 
   template <typename... Args>

@@ -24,6 +24,8 @@ namespace fire {
 
     SourceFile(std::string const& _path);
 
+    Token* lex();
+
     NdModule* parse();
 
     SourceFile* import(std::string const& _path);

@@ -23,15 +23,19 @@ namespace fire {
     for (std::string line; std::getline(ifs, line);)
       this->data.append(line.append("\n"));
 
+    length = data.length();
+
     all_sources[this->path] = this;
   }
 
+  Token* SourceFile::lex() {
+    if(lexed_token)return lexed_token;
+    return lexed_token = Lexer(this).lex();
+  }
+
   NdModule* SourceFile::parse() {
-    this->lexed_token = Lexer(this).lex();
-
-    this->parsed_mod = Parser(*this, this->lexed_token).parse();
-
-    return this->parsed_mod;
+    if(parsed_mod)return parsed_mod;
+    return parsed_mod = Parser(*this, this->lex()).parse();
   }
 
   //

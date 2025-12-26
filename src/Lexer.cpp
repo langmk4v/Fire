@@ -24,14 +24,16 @@ namespace fire {
     pass_space();
 
     while (!is_end()) {
+      if(match("//")) { pass_line_comment(); continue; }
+      if(match("/*")) { pass_block_comment(); continue; }  
       cur = tokenize(peek(), cur);
     }
 
-    cur = new Token(TokenKind::Eof, std::string_view(), cur, _source, _pos);
+    cur->next = new Token(TokenKind::Eof, std::string_view(), cur, _source, _pos);
 
     size_t i = 0, line = 1, col = 1;
 
-    for (Token* t = cur; t; t = t->next) {
+    for (Token* t = head.next; t = t->next;) {
       for (; i < t->pos; i++, col++)
         if (get_char(i) == '\n') line++, col = 0;
       t->line = line;
@@ -42,10 +44,8 @@ namespace fire {
   }
 
   Token* Lexer::tokenize(char c, Token* prev) {
-    pass_space();
-
     TokenKind kind = TokenKind::Unknown;
-    char const* str = _source->data.data() + _pos;
+    char const* str = getptr();
     size_t len = 0;
     size_t pos = _pos;
 
@@ -63,7 +63,7 @@ namespace fire {
         if (peek() == 'f') _pos++, len++;
       }
       pass_space();
-      return new Token(kind, std::string(str, len), prev, _source, pos);
+      return new Token(kind, std::string_view(str, len), prev, _source, pos);
     }
 
     // a-z|A-Z|_
@@ -72,7 +72,7 @@ namespace fire {
       while (!is_end() && (std::isalnum((c = peek())) || c == '_'))
         _pos++, len++;
       pass_space();
-      return new Token(kind, std::string(str, len), prev, _source, pos);
+      return new Token(kind, std::string_view(str, len), prev, _source, pos);
     }
 
     // char or string
@@ -80,7 +80,8 @@ namespace fire {
       kind = c == '"' ? TokenKind::String : TokenKind::Char;
       _pos++;
       char x;
-      std::string ss = std::string(1, c);
+      std::string* ss_ = new std::string(1, c);
+      std::string&ss=*ss_;
       while (!is_end() && (x = peek()) != c) {
         if (x == '\\') {
           _pos++;
@@ -102,17 +103,24 @@ namespace fire {
       }
       _pos++;
       pass_space();
-      return new Token(kind, ss + c, prev, _source, pos);
+      ss_->push_back(c);
+      return new Token(kind, std::string_view(ss_->data(),ss_->length()), prev, _source, pos);
     }
 
     else if (_token_punct_str_map_ const* p = find_punct(getptr()); p != nullptr) {
-      _pos++;
+      _pos+=std::strlen(p->str);
       pass_space();
-      return new Token(TokenKind::Punctuator, std::string_view(p->str), prev, _source, pos);
+      auto tok= new Token(TokenKind::Punctuator, std::string_view(p->str), prev, _source, pos);
+      tok->punct=p->punct;
+      return tok;
     }
 
+    char*buf=new char[2];
+    buf[0]=c;
+    buf[1]=0;
+
     throw err::invalid_token(
-        *(new Token(TokenKind::Unknown, std::string(1, c), prev, _source, pos)));
+        *(new Token(TokenKind::Unknown, buf, prev, _source, pos)));
   }
 
 } // namespace fire 

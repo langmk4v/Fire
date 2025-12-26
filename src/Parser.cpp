@@ -148,12 +148,12 @@ namespace fire {
     switch (cur->kind) {
       case TokenKind::Int:
         v->obj = new ObjInt(std::atoll(cur->text.data()));
-        cur++;
+        next();
         break;
 
       case TokenKind::Float:
         v->obj = new ObjFloat(std::atof(cur->text.data()));
-        cur++;
+        next();
         break;
 
       case TokenKind::Char: {
@@ -163,13 +163,13 @@ namespace fire {
           throw err::invalid_character_literal(*cur);
         }
         v->obj = new ObjChar(s16[0]);
-        cur++;
+        next();
         break;
       }
 
       case TokenKind::String: {
         v->obj = new ObjString(utf8_to_utf16_len_cpp(cur->text.data()+1, cur->text.length()-2));
-        cur++;
+        next();
         break;
       }
 
@@ -234,7 +234,7 @@ namespace fire {
           }
           x = new NdGetTupleElement(tok, x, atol(cur->text.data()));
           x->as<NdGetTupleElement>()->index_tok = cur;
-          cur++;
+          next();
           expect(">");
           continue;
         }
@@ -441,7 +441,7 @@ namespace fire {
     auto x = ps_bit_or();
 
     while (!is_end() && eat("&&"))
-      x = new NdExpr(NodeKind::LogAnd, *(cur - 1), x, ps_bit_or());
+      x = new NdExpr(NodeKind::LogAnd, *cur->prev, x, ps_bit_or());
 
     return x;
   }
@@ -450,7 +450,7 @@ namespace fire {
     auto x = ps_log_and();
 
     while (!is_end() && eat("||"))
-      x = new NdExpr(NodeKind::LogOr, *(cur - 1), x, ps_log_and());
+      x = new NdExpr(NodeKind::LogOr, *cur->prev, x, ps_log_and());
 
     return x;
   }
@@ -530,7 +530,7 @@ namespace fire {
       x->body = ps_scope();
 
       if (!look("catch")) {
-        throw err::parses::expected_catch_block(*(cur - 1));
+        throw err::parses::expected_catch_block(*cur->prev);
       }
 
       while (!is_end() && eat("catch")) {
@@ -682,13 +682,13 @@ namespace fire {
 
       else if (eat("new")) {
         if (!public_flag) {
-          warns::added_pub_attr_automatically (*(cur - 1))();
-          warns::show_note(*(cur - 1), "insert 'pub' keyword to remove this warning messages.")();
+          warns::added_pub_attr_automatically (*cur->prev)();
+          warns::show_note(*cur->prev, "insert 'pub' keyword to remove this warning messages.")();
         }
 
         if (node->m_new)
-          throw err::duplicate_of_definition(*(cur - 1), node->m_new->token);
-        auto newfn = new NdFunction(*(cur - 1), *(cur - 1));
+          throw err::duplicate_of_definition(*cur->prev, node->m_new->token);
+        auto newfn = new NdFunction(*cur->prev, *cur->prev);
         if (eat("(") && !eat(")")) {
           do {
             auto& A = newfn->args.emplace_back(*expect_ident(), nullptr);
@@ -720,7 +720,7 @@ namespace fire {
     nd->name = *tok;
 
     if (eat("(")) {
-      if (cur->kind == TokenKind::Identifier && (cur + 1)->text == ":") {
+      if (cur->kind == TokenKind::Identifier && cur->next->text == ":") {
         nd->type = NdEnumeratorDef::StructFields;
         do {
           Token* mb_name = expect_ident();

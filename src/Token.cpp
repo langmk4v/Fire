@@ -21,6 +21,7 @@ namespace fire {
     { TokenPunctuators::Punct_RShiftAssign, ">>=" },
     
     // -- 2 chars --
+    { TokenPunctuators::Punct_RightArrow, "->" },
     { TokenPunctuators::Punct_AddAssign, "+=" },
     { TokenPunctuators::Punct_SubAssign, "-=" },
     { TokenPunctuators::Punct_MulAssign, "*=" },
@@ -37,6 +38,7 @@ namespace fire {
     { TokenPunctuators::Punct_Or, "||" },
     { TokenPunctuators::Punct_LShift, "<<" },
     { TokenPunctuators::Punct_RShift, ">>" },
+    { TokenPunctuators::Punct_ScopeResol, "::" },
 
     // -- 1 char --
     { TokenPunctuators::Punct_Assign, "=" },

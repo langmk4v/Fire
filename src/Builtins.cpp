@@ -54,8 +54,8 @@ namespace fire {
   BuiltinFunc bltm_string_starts{
     .name = "starts",
     .is_var_args = false,
-    .result_type = TypeKind::Bool,
     .arg_types = {TypeKind::String, TypeKind::String},
+    .result_type = TypeKind::Bool,
     .impl = impl_string_starts,
   };
 

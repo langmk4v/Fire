@@ -24,6 +24,9 @@ namespace fire {
   enum TokenPunctuators {
     Punct_None,
 
+    // symbol
+    Punct_ScopeResol, // ::
+
     // assignments
     Punct_Assign,       // =
     Punct_AddAssign,    // +=
@@ -63,6 +66,7 @@ namespace fire {
     Punct_BitXor, // ^
 
     // misc
+    Punct_RightArrow,   // ->
     Punct_Comma,        // ,
     Punct_Semicolon,    // ;
     Punct_Colon,        // :
