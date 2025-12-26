@@ -279,7 +279,9 @@ namespace fire {
           throw err::mismatched_types(ge->token, "tuple", obj_ty.to_string());
         }
         if (ge->index < 0 || ge->index >= obj_ty.parameters.size()) {
-          throw err::index_out_of_range(*ge->index_tok, ge->index, obj_ty.parameters.size());
+          err::emitters::tuple_getter_index_out_of_range(*ge->index_tok, ge->expr->token,
+                                                         obj_ty.to_string(), ge->index,
+                                                         obj_ty.parameters.size());
         }
         node->ty = obj_ty.parameters[ge->index];
         break;

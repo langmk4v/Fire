@@ -25,7 +25,7 @@ namespace fire {
       char const* tag = nullptr;
       bool is_warn = false;
 
-      virtual e* print();
+      virtual e* print(bool show_file_loc = true);
 
       e(Token const& tok, std::string msg, errTypes et = ET_Error);
     };
@@ -278,6 +278,17 @@ namespace fire {
 
       static inline void expected_type_name_here(Token& tok) {
         err::e(tok, "expected type name here", ET_Error).print();
+      }
+
+      static inline void tuple_getter_index_out_of_range(Token& index_tok, Token& tuple_obj_tok,
+                                                         std::string const& tuple_type_str,
+                                                         int index, int size) {
+        err::index_out_of_range(index_tok, index, size).print();
+        err::e(tuple_obj_tok,
+               "tuple type: " COL_MAGENTA + tuple_type_str + COL_WHITE + " (maximum index is " +
+                   std::to_string(size - 1) + ")",
+               ET_Note)
+            .print(false);
       }
     } // namespace emitters
 
