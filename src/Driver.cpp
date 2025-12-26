@@ -87,7 +87,7 @@ namespace fire {
 
         Sema::analyze_all(mod);
 
-        LIR* low_ir = NodeLower::lower_full(mod);
+        IR::Low::LIR* low_ir = NodeLower::lower_full(mod);
 
         // if
         // (!mod->main_fn->scope_ptr->as<FunctionScope>()->result_type.equals(TypeInfo(TypeKind::Int)))

@@ -4,7 +4,8 @@
 #include <iostream>
 #include <string>
 
-#include "VM.hpp"
+#include "Object.hpp"
+#include "BuiltinFunc.hpp"
 
 #define IMPL(name) Object* impl_##name(std::vector<Object*>& args)
 
