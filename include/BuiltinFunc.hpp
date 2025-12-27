@@ -21,6 +21,7 @@ namespace fire {
   extern BuiltinFunc blt_print;
   extern BuiltinFunc blt_println;
 
+  extern BuiltinFunc bltm_string_length;
   extern BuiltinFunc bltm_string_starts;
   extern BuiltinFunc bltm_vector_append;
 
@@ -30,6 +31,9 @@ namespace fire {
   };
 
   static constexpr BuiltinFunc const* builtin_method_table[] = {
+    // string::length(self) -> int
+    &bltm_string_length,
+
     // string::starts(self, string) -> bool
     &bltm_string_starts,
 

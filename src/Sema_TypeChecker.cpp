@@ -52,8 +52,11 @@ namespace fire {
     // get argument types
     std::vector<TypeInfo> arg_types;
     for (auto& arg : cf->args) {
+      ctx.as_arg_of_callfunc = true;
       arg_types.push_back(eval_expr_ty(arg, ctx));
     }
+
+    ctx.as_arg_of_callfunc = false;
 
     TypeInfo self_ty;
     bool is_method_call = false;
@@ -311,6 +314,12 @@ namespace fire {
       }
 
       case NodeKind::KeyValuePair: {
+        auto kvp = node->as<NdKeyValuePair>();
+
+        if(ctx.as_arg_of_callfunc){
+          return eval_expr_ty(kvp->value, ctx);
+        }
+
         todo;
       }
 
@@ -414,7 +423,19 @@ namespace fire {
           todo; // not instance.
         }
 
-        todo;
+        NdClass* nd_class = obj_ty.class_node;
+
+        std::string const field_name { mm->rhs->token.text };
+
+        for(NdLet* field : nd_class->fields){
+          if(field->name.text == field_name){
+            node->ty = this->eval_typename_ty(field->type, ctx);
+            node->ty_evaluated = true;
+            return node->ty;
+          }
+        }
+
+        throw err::e(mm->rhs->token, "field '" + field_name + "' not found in '" + obj_ty.to_string() + "'");
       }
 
       case NodeKind::GetTupleElement: {
@@ -700,6 +721,9 @@ namespace fire {
       }
 
       case NodeKind::Return: {
+        auto nd_ret = node->as<NdReturn>();
+        nd_ret->ty = this->eval_expr_ty(nd_ret->expr, ctx);
+        nd_ret->ty_evaluated = true;
         break;
       }
 
@@ -750,7 +774,13 @@ namespace fire {
   }
 
   void TypeChecker::check_class(NdClass* node, NdVisitorContext ctx) {
-    (void)node;(void)ctx;
+    for(auto field : node->fields){
+      check_stmt(field, ctx);
+    }
+
+    for(auto method : node->methods){
+      check_function(method, ctx);
+    }
   }
 
   void TypeChecker::check_enum(NdEnum* node, NdVisitorContext ctx) {

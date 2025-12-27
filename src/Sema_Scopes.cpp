@@ -212,7 +212,7 @@ namespace fire {
     };
 
     for (auto& field : node->fields) {
-      fields.append(Sema::get_instance().new_variable_symbol(field));
+      field->symbol_ptr = fields.append(Sema::get_instance().new_variable_symbol(field));
     }
 
     for (auto& method : node->methods) {

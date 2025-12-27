@@ -30,6 +30,14 @@ namespace fire {
   }
 
   //
+  // string::length(self) -> int
+  //
+  IMPL(string_length) {
+    ObjString* self = args[0]->as<ObjString>();
+    return new ObjInt(static_cast<std::int64_t>(self->data.size()));
+  }
+
+  //
   // string::starts(self, string) -> bool
   //
   IMPL(string_starts) {
@@ -59,6 +67,14 @@ namespace fire {
       .is_var_args = true,
       .result_type = TypeKind::Int,
       .impl = impl_println,
+  };
+
+  BuiltinFunc bltm_string_length{
+    .name = "length",
+    .is_var_args = false,
+    .self_type = TypeKind::String,
+    .result_type = TypeKind::Int,
+    .impl = impl_string_length,
   };
 
   BuiltinFunc bltm_string_starts{
