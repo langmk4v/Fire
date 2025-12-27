@@ -33,7 +33,9 @@ namespace fire {
   Scope::Scope(ScopeKind kind, Node* node, Scope* parent) : kind(kind), node(node), parent(parent) {
   }
 
-  SCScope::SCScope(NdScope* node, Scope* parent) : Scope(ScopeKind::Scope, node, parent) {
+  SCScope::SCScope(NdScope* node, Scope* parent)
+    : Scope(ScopeKind::Scope, node, parent)
+  {
     node->scope_ptr = this;
 
     for (auto item : node->items) {
@@ -59,6 +61,9 @@ namespace fire {
         }
 
         case NodeKind::Scope:
+          subscopes.push_back(new SCScope(item->as<NdScope>(), this));
+          break;
+
         case NodeKind::For:
         case NodeKind::If:
           subscopes.push_back(Scope::from_node(item, this));

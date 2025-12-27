@@ -145,6 +145,8 @@ namespace fire {
   struct SCFunction : Scope {
     SymbolTable arguments;
     SCScope* body = nullptr;
+    
+    size_t var_max_count = 0;
 
     SCFunction(NdFunction* node, Scope* parent);
   };
@@ -221,7 +223,7 @@ namespace fire {
     TypeInfo type = {};
     bool is_type_deducted = false;
 
-    int offset = 0;
+    size_t offset = 0;
   };
 
   struct NdVisitorContext {
@@ -257,7 +259,7 @@ namespace fire {
 
     NdEnumeratorDef** enumerator_node_out = nullptr;
 
-    #ifdef _FIRE_DEBUG_
+  #ifdef _FIRE_DEBUG_
     static std::string ctx2s(NdVisitorContext ctx) {
       std::string flags;
       flags+=format("node: %p", ctx.node);
