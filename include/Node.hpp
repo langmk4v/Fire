@@ -444,6 +444,7 @@ namespace fire {
 
     Token& name;
     std::vector<Argument> args;
+    bool is_var_args = false;
     NdSymbol* result_type = nullptr;
     NdScope* body = nullptr;
 

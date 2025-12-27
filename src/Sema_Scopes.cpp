@@ -10,6 +10,13 @@ namespace fire {
         return new SCIf(node->as<NdIf>(), parent);
       case NodeKind::For:
         return new SCFor(node->as<NdFor>(), parent);
+
+      case NodeKind::While:
+        return new SCWhile(node->as<NdWhile>(), parent);
+      case NodeKind::Loop:
+        todo;
+        // return new SCLoop(node->as<NdLoop>(), parent);
+
       case NodeKind::Catch:
         return new SCCatch(node->as<NdCatch>(), parent);
       case NodeKind::Try:
@@ -44,7 +51,7 @@ namespace fire {
           auto let = item->as<NdLet>();
 
           for (auto s : symtable.symbols) {
-            if (s->kind == SymbolKind::Var && s->name == let->name.text) {
+            if (s->node != let && s->kind == SymbolKind::Var && s->name == let->name.text) {
               let->symbol_ptr = s;
               alert;
               goto __pass_create_letsym;
@@ -64,8 +71,12 @@ namespace fire {
           subscopes.push_back(new SCScope(item->as<NdScope>(), this));
           break;
 
-        case NodeKind::For:
         case NodeKind::If:
+        case NodeKind::Match:
+        case NodeKind::For:
+        case NodeKind::While:
+        case NodeKind::Loop:
+        case NodeKind::Try: 
           subscopes.push_back(Scope::from_node(item, this));
           break;
       }
@@ -95,6 +106,17 @@ namespace fire {
     symtable.append(iter_name);
 
     body = new SCScope(node->body, this);
+  }
+
+  SCWhile::SCWhile(NdWhile* node, Scope* parent) : Scope(ScopeKind::While, node, parent) {
+    node->scope_ptr = this;
+
+    if (node->vardef) {
+      this->var = Sema::get_instance().new_variable_symbol(node->vardef);
+      this->symtable.append(this->var);
+    }
+
+    this->body = new SCScope(node->body, this);
   }
 
   SCCatch::SCCatch(NdCatch* node, Scope* parent) : Scope(ScopeKind::Catch, node, parent) {

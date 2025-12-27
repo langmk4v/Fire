@@ -74,8 +74,40 @@ namespace fire {
 
       std::string const method_name { cf->callee->token.text };
 
-      if(self_ty.is(TypeKind::Class) || self_ty.is(TypeKind::Enum)){
-        todo;
+      //
+      // call method of class
+      if(self_ty.is(TypeKind::Class)){
+        NdClass* nd_class = self_ty.class_node;
+
+        for(NdFunction* method : nd_class->methods){
+          if(method->name.text == method_name){
+            std::vector<TypeInfo> arg_defs;
+            for(auto arg : method->args){
+              arg_defs.push_back(eval_typename_ty(arg.type, ctx));
+            }
+            
+            auto cmp = compare_arguments(
+              cf, method, nullptr, method->is_var_args, true, self_ty, arg_defs, arg_types);
+
+            if(cmp.flags & ArgumentsCompareResult::TypeMismatch){
+              throw err::mismatched_types(cf->args[cmp.mismatched_index]->token,
+                  arg_defs[cmp.mismatched_index].to_string(), arg_types[cmp.mismatched_index].to_string());
+            }
+
+            if(cmp.flags & ArgumentsCompareResult::TooMany){
+              throw err::too_many_arguments(cf->args[cmp.mismatched_index]->token);
+            }
+
+            if(cmp.flags & ArgumentsCompareResult::TooFew){
+              throw err::too_few_arguments(cf->args[cmp.mismatched_index]->token);
+            }
+
+            cf->ty = this->eval_typename_ty(method->result_type, ctx);
+            cf->ty_evaluated = true;
+
+            return cf->ty;
+          }
+        }
       }
 
       for(BuiltinFunc const* method : builtin_method_table ){
@@ -470,7 +502,7 @@ namespace fire {
           }
 
           case SymbolKind::Class:
-            todo;
+            return make_class_type(sym->symbol_ptr->node->as<NdClass>());
 
           case SymbolKind::BuiltinType: {
             TypeInfo ty = sym->symbol_ptr->type;
@@ -553,6 +585,8 @@ namespace fire {
 
       case NodeKind::Let: {
         auto let = node->as<NdLet>();
+
+        PRINT_LOCATION(let->token);
 
         assert(let->symbol_ptr);
 
@@ -637,6 +671,26 @@ namespace fire {
         todo;
       }
 
+      case NodeKind::Try: {
+        auto nd_try = node->as<NdTry>();
+
+        check_scope(nd_try->body, ctx);
+
+        for(auto nd_catch : nd_try->catches){
+          TypeInfo holder_error_ty = eval_typename_ty(nd_catch->error_type, ctx);
+
+          (void)holder_error_ty;
+
+          check_scope(nd_catch->body, ctx);
+        }
+
+        if(nd_try->finally_block){
+          check_scope(nd_try->finally_block, ctx);
+        }
+
+        todo;
+      }
+
       case NodeKind::Break: {
         todo;
       }
@@ -711,6 +765,25 @@ namespace fire {
         case NodeKind::Let:
           check_stmt(item, ctx);
           break;
+
+        case NodeKind::Function:
+          check_function(item->as<NdFunction>(), ctx);
+          break;
+
+        case NodeKind::Class:
+          check_class(item->as<NdClass>(), ctx);
+          break;
+
+        case NodeKind::Enum:
+          check_enum(item->as<NdEnum>(), ctx);
+          break;
+
+        case NodeKind::Namespace:
+          check_namespace(item->as<NdNamespace>(), ctx);
+          break;
+
+        default:
+          todo;
       }
     }
   }
@@ -739,6 +812,9 @@ namespace fire {
         case NodeKind::Namespace:
           check_namespace(item->as<NdNamespace>(), ctx);
           break;
+
+        default:
+          todo;
       }
     }
   }

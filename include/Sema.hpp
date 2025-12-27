@@ -71,14 +71,19 @@ namespace fire {
 
   enum class ScopeKind {
     Unknown,
+
     Scope,
-    Try,
-    Catch,
+
     If,
     For,
+    While,
+    Try,
+    Catch,
+
     Func,
     Enum,
     Class,
+
     Namespace,
     Module,
   };
@@ -125,6 +130,13 @@ namespace fire {
     SCScope* body = nullptr;
 
     SCFor(NdFor* node, Scope* parent);
+  };
+
+  struct SCWhile : Scope {
+    Symbol* var = nullptr;
+    SCScope* body = nullptr;
+
+    SCWhile(NdWhile* node, Scope* parent);
   };
 
   struct SCCatch : Scope {
