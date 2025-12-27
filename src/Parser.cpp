@@ -11,44 +11,11 @@
 
 namespace fire {
 
-NdSymbol* Parser::ps_type_name() {
-  Token& tok = *cur;
-
-  //
-  // parse syntax suger for tuple type
-  // (T, U, ...) --> tuple<T, U, ...>
-  if (eat("(")) {
-    NdSymbol* tuple_type = new NdSymbol(tok);
-
-    tuple_type->name.kind = TokenKind::Identifier;
-    tuple_type->name.text = "tuple";
-    tuple_type->te_args.push_back(ps_type_name());
-
-    expect_comma();
-
-    do {
-      tuple_type->te_args.push_back(ps_type_name());
-    } while (!is_end() && eat_comma());
-
-    expect(")");
-
-    return tuple_type;
-  }
-
-  if (eat("decltype")) {
-    expect("(");
-
-    NdDeclType* x = new NdDeclType(tok, ps_expr());
-
-    expect(")");
-
-    NdSymbol* s = new NdSymbol(tok);
-    s->dec = x;
-
-    return s;
-  }
-
-  return ps_symbol(true);
+NdModule* Parser::parse() {
+  auto mod = ps_mod();
+  merge_namespaces(mod->items);
+  reorder_items(mod->items);
+  return mod;
 }
 
 void Parser::ps_do_import(Token* import_token, std::string path) {
@@ -166,13 +133,6 @@ void Parser::reorder_items(std::vector<Node*>& items) {
     else if (x->is(NodeKind::Module))
       reorder_items(x->as<NdModule>()->items);
   }
-}
-
-NdModule* Parser::parse() {
-  auto mod = ps_mod();
-  merge_namespaces(mod->items);
-  reorder_items(mod->items);
-  return mod;
 }
 
 } // namespace fire

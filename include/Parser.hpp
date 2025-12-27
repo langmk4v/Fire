@@ -89,6 +89,10 @@ private:
   bool eat_curly_open() { return eat(TokenPunctuators::Punct_CurlyOpen); }
   bool eat_curly_close() { return eat(TokenPunctuators::Punct_CurlyClose); }
 
+  // < >
+  bool eat_angle_open() { return eat(TokenPunctuators::Punct_Less); }
+  bool eat_angle_close() { return eat(TokenPunctuators::Punct_Greater); }
+
   bool look(char const* s) { return cur->text == s; }
   bool look(TokenPunctuators p) { return cur->punct == p; }
 
@@ -130,6 +134,10 @@ private:
   }
   Token* expect_curly_close() {
     return expect(TokenPunctuators::Punct_CurlyClose);
+  }
+  Token* expect_angle_open() { return expect(TokenPunctuators::Punct_Less); }
+  Token* expect_angle_close() {
+    return expect(TokenPunctuators::Punct_Greater);
   }
 
   Token* next() { return (cur = cur->next)->prev; }
