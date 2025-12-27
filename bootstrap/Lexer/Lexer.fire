@@ -9,8 +9,8 @@ namespace firec {
 
     class Lexer {
         var source: SourceFile;
-        var pos: usize;
-        var len: usize;
+        var pos: int;
+        var len: int;
 
         fn new(source: SourceFile) -> Lexer {
             return Lexer(source: source, pos: 0, len: source.data.length());

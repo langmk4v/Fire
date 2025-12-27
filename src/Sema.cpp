@@ -16,7 +16,6 @@ namespace fire {
     {"none", TypeKind::None},
     {"int", TypeKind::Int},
     {"float", TypeKind::Float},
-    {"usize", TypeKind::USize},
     {"bool", TypeKind::Bool},
     {"char", TypeKind::Char},
     {"string", TypeKind::String},
@@ -24,6 +23,7 @@ namespace fire {
     {"List", TypeKind::List},
     {"tuple", TypeKind::Tuple},
     {"dict", TypeKind::Dict},
+    {"Option", TypeKind::Option},
     {"functor", TypeKind::Function},
   };
   // clang-format on

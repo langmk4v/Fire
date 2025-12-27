@@ -10,7 +10,6 @@ namespace fire {
     None,
     Int,
     Float,
-    USize,
     Bool,
     Char,
     String,
@@ -18,6 +17,7 @@ namespace fire {
     List,
     Tuple,
     Dict,
+    Option,
     Function,
     Any,
     Class, // => クラス名、インスタンスどちらにも使用

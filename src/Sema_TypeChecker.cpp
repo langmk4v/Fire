@@ -535,8 +535,9 @@ namespace fire {
   }
 
   TypeInfo TypeChecker::eval_typename_ty(NdSymbol* node, NdVisitorContext ctx) {
-    (void)node;
-    (void)ctx;
+    ctx.node = node;
+    
+    PRINT_LOCATION(node->token);
 
     switch (node->kind) {
       case NodeKind::Symbol: {
@@ -578,6 +579,12 @@ namespace fire {
               case TypeKind::Dict:
                 if (ty.parameters.size() != 2) {
                   todo; // dict must have two parameters
+                }
+                break;
+
+              case TypeKind::Option:
+                if (ty.parameters.size() != 1) {
+                  todo; // option must have one parameter
                 }
                 break;
             }
@@ -715,7 +722,25 @@ namespace fire {
       }
 
       case NodeKind::While: {
-        todo;
+        NdWhile* nd_while = node->as<NdWhile>();
+
+        auto cs = ctx.cur_scope;
+
+        ctx.loop_depth++;
+        ctx.cur_scope = nd_while->scope_ptr;
+
+        if(nd_while->vardef)
+          check_stmt(nd_while->vardef, ctx);
+
+        if(nd_while->cond)
+          check_expr(nd_while->cond, ctx);
+
+        check_scope(nd_while->body, ctx);
+
+        ctx.cur_scope = cs;
+        ctx.loop_depth--;
+
+        break;
       }
 
       case NodeKind::Loop: {
@@ -723,11 +748,11 @@ namespace fire {
       }
 
       case NodeKind::Try: {
-        auto nd_try = node->as<NdTry>();
+        NdTry* nd_try = node->as<NdTry>();
 
         check_scope(nd_try->body, ctx);
 
-        for(auto nd_catch : nd_try->catches){
+        for(NdCatch* nd_catch : nd_try->catches){
           TypeInfo holder_error_ty = eval_typename_ty(nd_catch->error_type, ctx);
 
           (void)holder_error_ty;
@@ -804,13 +829,18 @@ namespace fire {
   }
 
   void TypeChecker::check_class(NdClass* node, NdVisitorContext ctx) {
+    ctx.cur_class = node->scope_ptr->as<SCClass>();
+
     for(auto field : node->fields){
       check_stmt(field, ctx);
     }
 
     for(auto method : node->methods){
+      ctx.in_method = method->take_self;
       check_function(method, ctx);
     }
+
+    ctx.in_method = false;
   }
 
   void TypeChecker::check_enum(NdEnum* node, NdVisitorContext ctx) {

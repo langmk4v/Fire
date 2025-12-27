@@ -114,6 +114,8 @@ namespace fire {
     if (node->vardef) {
       this->var = Sema::get_instance().new_variable_symbol(node->vardef);
       this->symtable.append(this->var);
+      
+      node->vardef->symbol_ptr = this->var;
     }
 
     this->body = new SCScope(node->body, this);
