@@ -2,9 +2,9 @@
 個人的に趣味で開発しているプログラミング言語です。<br>
 Rust の構文に似ている静的型付けで、実行時コンパイル機能を搭載したインタプリタ言語。
 
-# Language Documentation
-[`日本語`](./Document.md) <br>
-[`ENGLISH`](./DocumentEnglish.md) <br>
+# Documentation
+[`日本語`](https://zenn.dev/famfencha/articles/6772eceb85cb8c) <br>
+[`ENGLISH`](https://) <br>
 
 # Build Step
 ## Requirements

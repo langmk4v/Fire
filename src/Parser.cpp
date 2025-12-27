@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <filesystem>
+#include <unordered_map>
 
 #include "Driver.hpp"
 #include "Error.hpp"
@@ -111,56 +113,53 @@ void Parser::ps_import() {
 }
 
 void Parser::merge_namespaces(std::vector<Node*>& items) {
-  bool flag = false;
-__begin__:;
-  flag = false;
-  for (size_t i = 0; i < items.size();) {
-    if (auto orig = items[i]->as<NdNamespace>();
-        orig->is(NodeKind::Namespace)) {
-      for (size_t j = i + 1; j < items.size(); j++) {
-        if (auto dup = items[j]->as<NdNamespace>();
-            dup->is(NodeKind::Namespace) && dup->name == orig->name) {
-          for (auto x : dup->items)
-            orig->items.push_back(x);
-          delete dup;
-          items.erase(items.begin() + j);
-          flag = true;
-          goto __merged;
-        }
-      }
-      i++;
-    __merged:;
-    } else {
-      i++;
-    }
+  std::unordered_map<std::string, NdNamespace*> table;
+
+  for (Node*& node : items) {
+    if (!node->is(NodeKind::Namespace))
+      continue;
+
+    auto ns = node->as<NdNamespace>();
+
+    auto [it, inserted] = table.emplace(ns->name, ns);
+
+    if (inserted)
+      continue;
+
+    auto original = it->second;
+
+    original->items.insert(original->items.end(), ns->items.begin(),
+                           ns->items.end());
+
+    delete ns;
+    node = nullptr;
   }
-  if (flag)
-    goto __begin__;
-  for (auto&& x : items) {
-    if (x->is(NodeKind::Namespace))
-      merge_namespaces(x->as<NdNamespace>()->items);
-  }
+
+  items.erase(std::remove(items.begin(), items.end(), nullptr), items.end());
+
+  for (Node* node : items)
+    if (node->is(NodeKind::Namespace))
+      merge_namespaces(node->as<NdNamespace>()->items);
 }
 
 void Parser::reorder_items(std::vector<Node*>& items) {
-  // move all enums at first
-  std::vector<Node*> _new;
-  for (auto&& x : items)
-    if (x->is(NodeKind::Let))
-      _new.push_back(x);
-  for (auto&& x : items)
-    if (x->is(NodeKind::Namespace))
-      _new.push_back(x);
-  for (auto&& x : items)
-    if (x->is(NodeKind::Enum))
-      _new.push_back(x);
-  for (auto&& x : items)
-    if (x->is(NodeKind::Class))
-      _new.push_back(x);
-  for (auto&& x : items)
-    if (x->is(NodeKind::Function))
-      _new.push_back(x);
-  items = std::move(_new);
+  std::vector<Node*> V;
+
+  V.reserve(items.size());
+
+  auto appender = [&items, &V](NodeKind K) {
+    for (Node* x : items)
+      if (x->is(K))
+        V.push_back(x);
+  };
+
+  appender(NodeKind::Namespace);
+  appender(NodeKind::Enum);
+  appender(NodeKind::Class);
+  appender(NodeKind::Function);
+
+  items = std::move(V);
+
   for (auto&& x : items) {
     if (x->is(NodeKind::Namespace))
       reorder_items(x->as<NdNamespace>()->items);
