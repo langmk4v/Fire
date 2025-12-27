@@ -22,20 +22,15 @@ NdLet* Parser::ps_let(bool expect_semi) {
     expect_ident();
   }
 
-  if (eat(":"))
-    let->type = ps_type_name();
-  if (eat("="))
-    let->init = ps_expr();
-  if (expect_semi)
-    expect(";");
+  if (eat(":")) let->type = ps_type_name();
+  if (eat("=")) let->init = ps_expr();
+  if (expect_semi) expect(";");
   return let;
 }
 Node* Parser::ps_stmt() {
   auto& tok = *cur;
-  if (look("{"))
-    return ps_scope();
-  if (look("var"))
-    return ps_let();
+  if (look("{")) return ps_scope();
+  if (look("var")) return ps_let();
   if (eat("try")) {
     auto x = new NdTry(tok);
     x->body = ps_scope();
@@ -57,10 +52,8 @@ Node* Parser::ps_stmt() {
   }
   if (eat("if")) {
     auto x = new NdIf(tok);
-    if (look("var"))
-      x->vardef = ps_let(false);
-    if (!x->vardef || eat(";"))
-      x->cond = ps_expr();
+    if (look("var")) x->vardef = ps_let(false);
+    if (!x->vardef || eat(";")) x->cond = ps_expr();
     x->thencode = ps_scope();
     if (eat("else")) {
       if (look("if"))
@@ -72,10 +65,8 @@ Node* Parser::ps_stmt() {
   }
   if (eat("while")) {
     auto x = new NdWhile(tok);
-    if (look("var"))
-      x->vardef = ps_let(false);
-    if (!x->vardef || eat(";"))
-      x->cond = ps_expr();
+    if (look("var")) x->vardef = ps_let(false);
+    if (!x->vardef || eat(";")) x->cond = ps_expr();
     x->body = ps_scope();
     return x;
   }
@@ -89,8 +80,10 @@ Node* Parser::ps_stmt() {
   }
   if (eat("return")) {
     auto nd = new NdReturn(tok);
-    if (!eat(";"))
-      nd->expr = ps_expr(), expect(";");
+    if (!eat(";")) {
+      nd->expr = ps_expr();
+      expect(";");
+    }
     return nd;
   }
   if (eat("break")) {
@@ -111,8 +104,7 @@ NdScope* Parser::ps_scope() {
   if (!eat("}")) {
     while (!is_end()) {
       x->items.emplace_back(ps_stmt());
-      if (eat("}"))
-        return x;
+      if (eat("}")) return x;
     }
     throw err::scope_not_terminated(x->token);
   } else

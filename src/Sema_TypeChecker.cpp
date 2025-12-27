@@ -25,8 +25,7 @@ TypeChecker::ArgumentsCompareResult TypeChecker::compare_arguments(
   // actual = 呼び出し側
   ArgumentsCompareResult result{};
   if (defs.size() < actual.size()) {
-    if (!is_var_arg)
-      result.flags |= ArgumentsCompareResult::TooMany;
+    if (!is_var_arg) result.flags |= ArgumentsCompareResult::TooMany;
   } else if (defs.size() > actual.size()) {
     result.flags |= ArgumentsCompareResult::TooFew;
   }
@@ -42,6 +41,7 @@ TypeChecker::ArgumentsCompareResult TypeChecker::compare_arguments(
   }
   return result;
 }
+
 TypeInfo TypeChecker::case_call_func(NdCallFunc* cf, NdVisitorContext ctx) {
   // get argument types
   std::vector<TypeInfo> arg_types;
@@ -177,6 +177,7 @@ TypeInfo TypeChecker::case_call_func(NdCallFunc* cf, NdVisitorContext ctx) {
   cf->ty = callee_ty.parameters[0];
   return cf->ty;
 }
+
 TypeInfo TypeChecker::case_method_call(NdCallFunc* cf, NdVisitorContext ctx) {
   (void)cf;
   (void)ctx;
@@ -569,10 +570,8 @@ void TypeChecker::check_stmt(Node* node, NdVisitorContext ctx) {
     auto cs = ctx.cur_scope;
     auto ifscope = if_->scope_ptr->as<SCIf>();
     ctx.cur_scope = ifscope;
-    if (if_->vardef)
-      check_stmt(if_->vardef, ctx);
-    if (if_->cond)
-      check_expr(if_->cond, ctx);
+    if (if_->vardef) check_stmt(if_->vardef, ctx);
+    if (if_->cond) check_expr(if_->cond, ctx);
     check_scope(if_->thencode, ctx);
     if (if_->elsecode) {
       check_stmt(if_->elsecode, ctx);
@@ -614,10 +613,8 @@ void TypeChecker::check_stmt(Node* node, NdVisitorContext ctx) {
     auto cs = ctx.cur_scope;
     ctx.loop_depth++;
     ctx.cur_scope = nd_while->scope_ptr;
-    if (nd_while->vardef)
-      check_stmt(nd_while->vardef, ctx);
-    if (nd_while->cond)
-      check_expr(nd_while->cond, ctx);
+    if (nd_while->vardef) check_stmt(nd_while->vardef, ctx);
+    if (nd_while->cond) check_expr(nd_while->cond, ctx);
     check_scope(nd_while->body, ctx);
     ctx.cur_scope = cs;
     ctx.loop_depth--;

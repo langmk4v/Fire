@@ -17,8 +17,7 @@ NdFunction* Parser::ps_function(bool is_method) {
     if (!eat(")")) {
       if (is_method && eat("self")) {
         node->take_self = true;
-        if (!eat_comma())
-          goto L_fn_pass_args;
+        if (!eat_comma()) goto L_fn_pass_args;
       }
       do {
         auto arg_name = expect_ident();
@@ -42,8 +41,7 @@ NdClass* Parser::ps_class() {
 
   _parse_template_param_defs(*node);
 
-  if (eat_colon())
-    node->base_class = ps_type_name();
+  if (eat_colon()) node->base_class = ps_type_name();
 
   expect_curly_open();
 
@@ -126,27 +124,24 @@ NdNamespace* Parser::ps_namespace() {
   std::string name{expect_ident()->text};
   NdNamespace* ns = new NdNamespace(*tok, name);
   Token* scope_tok = expect("{");
-  if (eat("}"))
-    return ns;
+  if (eat("}")) return ns;
   while (!is_end()) {
     ns->items.emplace_back(ps_toplevel());
-    if (eat("}"))
-      return ns;
+    if (eat("}")) return ns;
   }
   throw err::scope_not_terminated(*scope_tok);
 }
 
 Node* Parser::ps_toplevel() {
-  if (look("var"))
-    return ps_let();
-  if (look("fn"))
-    return ps_function();
-  if (look("class"))
-    return ps_class();
-  if (look("enum"))
-    return ps_enum();
-  if (look("namespace"))
-    return ps_namespace();
+
+  if (look("var")) {
+    throw err::parses::cannot_declare_variable_here(*cur);
+  }
+
+  if (look("fn")) return ps_function();
+  if (look("class")) return ps_class();
+  if (look("enum")) return ps_enum();
+  if (look("namespace")) return ps_namespace();
   throw err::expected_item_of_module(*cur);
 }
 
@@ -156,8 +151,7 @@ NdModule* Parser::ps_mod() {
     ps_import();
   }
   for (auto&& src : source.imports) {
-    if (src->is_node_imported)
-      continue;
+    if (src->is_node_imported) continue;
     auto submod = src->parse();
     for (auto&& item : submod->items) {
       mod->items.emplace_back(item);

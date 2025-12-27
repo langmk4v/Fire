@@ -48,6 +48,7 @@ set(FIRE_SOURCE_FILES
   src/Lexer.cpp
   src/Lower.cpp
   src/main.cpp
+  src/Node.cpp
   src/Object.cpp
   src/Parser.cpp
   src/ParserExpr.cpp

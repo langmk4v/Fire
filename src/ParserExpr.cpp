@@ -74,8 +74,7 @@ NdSymbol* Parser::ps_symbol(bool as_typename) {
   }
 
   if (as_typename) {
-    if (eat(":"))
-      sym->concept_nd = ps_type_name();
+    if (eat(":")) sym->concept_nd = ps_type_name();
     sym->is_ref = eat("ref");
     sym->is_const = eat("const");
   }
@@ -100,8 +99,7 @@ Node* Parser::ps_factor() {
   }
   if (eat("[")) {
     auto node = new NdArray(tok);
-    if (eat("]"))
-      return node;
+    if (eat("]")) return node;
     do {
       node->data.emplace_back(ps_expr());
     } while (eat(","));
@@ -109,11 +107,9 @@ Node* Parser::ps_factor() {
     return node;
   }
 
-  if (eat("self"))
-    return new NdOneToken(NodeKind::Self, tok);
+  if (eat("self")) return new NdOneToken(NodeKind::Self, tok);
 
-  if (eat("nullopt"))
-    return new NdOneToken(NodeKind::NullOpt, tok);
+  if (eat("nullopt")) return new NdOneToken(NodeKind::NullOpt, tok);
 
   if (eat("true")) {
     auto v = new NdValue(tok);
@@ -159,8 +155,13 @@ Node* Parser::ps_factor() {
   }
 
   case TokenKind::String: {
-    v->obj = ObjString::from_char16_ptr_move(utf8_to_utf16_with_len(
-        nullptr, cur->text.data() + 1, cur->text.length() - 2));
+    char16_t* tmp = utf8_to_utf16_with_len(nullptr, cur->text.data() + 1,
+                                           cur->text.length() - 2);
+
+    v->obj = ObjString::from_char16_ptr(tmp);
+
+    free(tmp);
+
     next();
     break;
   }
@@ -181,8 +182,13 @@ Node* Parser::ps_subscript() {
       auto y = new NdCallFunc(x, *op);
       if (x->is(NodeKind::MemberAccess)) {
         y->is_method_call = true;
-        y->inst_expr = x->as<NdExpr>()->lhs;
-        y->callee = x->as<NdExpr>()->rhs;
+
+        auto ex = x->as<NdExpr>();
+        y->inst_expr = ex->lhs;
+        y->callee = ex->rhs;
+
+        ex->lhs = ex->rhs = nullptr;
+        delete ex;
       }
       if (!eat_paren_close()) {
         do {

@@ -2,11 +2,6 @@ import Token;
 import SourceFile;
 
 namespace firec {
-    var lexer_punctuator_table : Vec<(string, TokenPunctuators)> = [
-        ("+",   TokenPunctuators::Plus),
-        ("-",   TokenPunctuators::Minus)
-    ];
-
     class Lexer {
         var source: SourceFile;
         var pos: int;
@@ -58,6 +53,11 @@ namespace firec {
         }
 
         fn find_punct(self) -> Option<(string, TokenPunctuators)> {
+            var lexer_punctuator_table : Vec<(string, TokenPunctuators)> = [
+                ("+",   TokenPunctuators::Plus),
+                ("-",   TokenPunctuators::Minus)
+            ];
+
             for pair in lexer_punctuator_table {
                 if self.eat(pair.<0>) {
                     return pair;

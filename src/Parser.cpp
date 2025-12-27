@@ -83,22 +83,22 @@ void Parser::merge_namespaces(std::vector<Node*>& items) {
   std::unordered_map<std::string, NdNamespace*> table;
 
   for (Node*& node : items) {
-    if (!node->is(NodeKind::Namespace))
-      continue;
+    if (!node->is(NodeKind::Namespace)) continue;
 
     auto ns = node->as<NdNamespace>();
 
     auto [it, inserted] = table.emplace(ns->name, ns);
 
-    if (inserted)
-      continue;
+    if (inserted) continue;
 
     auto original = it->second;
 
     original->items.insert(original->items.end(), ns->items.begin(),
                            ns->items.end());
 
+    ns->items.clear();
     delete ns;
+
     node = nullptr;
   }
 
@@ -116,8 +116,7 @@ void Parser::reorder_items(std::vector<Node*>& items) {
 
   auto appender = [&items, &V](NodeKind K) {
     for (Node* x : items)
-      if (x->is(K))
-        V.push_back(x);
+      if (x->is(K)) V.push_back(x);
   };
 
   appender(NodeKind::Namespace);

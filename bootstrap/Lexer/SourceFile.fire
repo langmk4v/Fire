@@ -10,6 +10,6 @@ namespace firec {
 
     class SourceLocation {
         var source: SourceFile ref;
-        var position: usize;
+        var position: int;
     }
 }
