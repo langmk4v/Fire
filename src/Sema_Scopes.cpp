@@ -33,8 +33,17 @@ Scope* Scope::from_node(Node* node, Scope* parent) {
   }
   todo;
 }
+
 Scope::Scope(ScopeKind kind, Node* node, Scope* parent)
     : kind(kind), node(node), parent(parent) {}
+
+Scope::~Scope() {
+  if (symbol) delete symbol;
+
+  for (auto symbol : symtable.symbols)
+    delete symbol;
+}
+
 SCScope::SCScope(NdScope* node, Scope* parent)
     : Scope(ScopeKind::Scope, node, parent) {
   node->scope_ptr = this;
@@ -51,7 +60,7 @@ SCScope::SCScope(NdScope* node, Scope* parent)
         }
       }
       let->symbol_ptr = symtable.append(
-          variables.append(Sema::get_instance().new_variable_symbol(let)));
+          variables.append(Sema::get_instance()->new_variable_symbol(let)));
       assert(let->symbol_ptr);
     __pass_create_letsym:;
       break;
@@ -70,10 +79,16 @@ SCScope::SCScope(NdScope* node, Scope* parent)
     }
   }
 }
+
+SCScope::~SCScope() {
+  for (auto scope : subscopes)
+    delete scope;
+}
+
 SCIf::SCIf(NdIf* node, Scope* parent) : Scope(ScopeKind::If, node, parent) {
   node->scope_ptr = this;
   if (node->vardef) {
-    var = Sema::get_instance().new_variable_symbol(node->vardef);
+    var = Sema::get_instance()->new_variable_symbol(node->vardef);
     symtable.append(var);
   }
   then_scope = new SCScope(node->thencode, this);
@@ -81,38 +96,53 @@ SCIf::SCIf(NdIf* node, Scope* parent) : Scope(ScopeKind::If, node, parent) {
     else_scope = new SCScope(node->elsecode->as<NdScope>(), this);
   }
 }
+
+SCIf::~SCIf() {
+  delete then_scope;
+  delete else_scope;
+}
+
 SCFor::SCFor(NdFor* node, Scope* parent) : Scope(ScopeKind::For, node, parent) {
   node->scope_ptr = this;
   iter_name =
-      Sema::get_instance().new_variable_symbol(&node->iter, node->iter.text);
+      Sema::get_instance()->new_variable_symbol(&node->iter, node->iter.text);
   symtable.append(iter_name);
   body = new SCScope(node->body, this);
 }
+
+SCFor::~SCFor() { delete body; }
+
 SCWhile::SCWhile(NdWhile* node, Scope* parent)
     : Scope(ScopeKind::While, node, parent) {
   node->scope_ptr = this;
   if (node->vardef) {
-    this->var = Sema::get_instance().new_variable_symbol(node->vardef);
+    this->var = Sema::get_instance()->new_variable_symbol(node->vardef);
     this->symtable.append(this->var);
     node->vardef->symbol_ptr = this->var;
   }
   this->body = new SCScope(node->body, this);
 }
+
+SCWhile::~SCWhile() { delete body; }
+
 SCCatch::SCCatch(NdCatch* node, Scope* parent)
     : Scope(ScopeKind::Catch, node, parent) {
   node->scope_ptr = this;
-  holder_name = Sema::get_instance().new_variable_symbol(&node->holder,
-                                                         node->holder.text);
+  holder_name = Sema::get_instance()->new_variable_symbol(&node->holder,
+                                                          node->holder.text);
   symtable.append(holder_name);
   body = new SCScope(node->body, this);
   node->scope_ptr = this;
 }
+
+SCCatch::~SCCatch() { delete body; }
+
 SCTry::SCTry(NdTry* node, Scope* parent) : Scope(ScopeKind::Try, node, parent) {
   node->scope_ptr = this;
   body = new SCScope(node->body, this);
   for (auto& catch_node : node->catches) {
     auto cc = new SCCatch(catch_node, this);
-    cc->holder_name = Sema::get_instance().new_variable_symbol(
+    cc->holder_name = Sema::get_instance()->new_variable_symbol(
         &catch_node->holder, catch_node->holder.text);
     cc->symtable.append(cc->holder_name);
     cc->body = new SCScope(catch_node->body, cc);
@@ -124,11 +154,18 @@ SCTry::SCTry(NdTry* node, Scope* parent) : Scope(ScopeKind::Try, node, parent) {
   node->scope_ptr = this;
 }
 
+SCTry::~SCTry() {
+  delete body;
+  for (auto catch_ : catches)
+    delete catch_;
+  delete finally_scope;
+}
+
 SCFunction::SCFunction(NdFunction* node, Scope* parent)
     : Scope(ScopeKind::Func, node, parent) {
   node->scope_ptr = this;
 
-  symbol = {
+  symbol = new Symbol{
       .name = std::string(node->name.text),
       .kind = SymbolKind::Func,
       .node = node,
@@ -137,7 +174,7 @@ SCFunction::SCFunction(NdFunction* node, Scope* parent)
 
   for (auto& arg : node->args) {
     auto a = arguments.append(
-        Sema::get_instance().new_variable_symbol(&arg->name, arg->name.text));
+        Sema::get_instance()->new_variable_symbol(&arg->name, arg->name.text));
 
     symtable.append(a);
     arg->var_info_ptr = a->var_info;
@@ -146,10 +183,13 @@ SCFunction::SCFunction(NdFunction* node, Scope* parent)
   body = new SCScope(node->body, this);
   node->scope_ptr = this;
 }
+
+SCFunction::~SCFunction() { delete body; }
+
 SCEnum::SCEnum(NdEnum* node, Scope* parent)
     : Scope(ScopeKind::Enum, node, parent) {
   node->scope_ptr = this;
-  symbol = {
+  symbol = new Symbol{
       .name = std::string(node->name.text),
       .kind = SymbolKind::Enum,
       .node = node,
@@ -166,29 +206,41 @@ SCEnum::SCEnum(NdEnum* node, Scope* parent)
   }
   node->scope_ptr = this;
 }
+
+SCEnum::~SCEnum() {}
+
 SCClass::SCClass(NdClass* node, Scope* parent)
     : Scope(ScopeKind::Class, node, parent) {
   node->scope_ptr = this;
-  symbol = {
+
+  symbol = new Symbol{
       .name = std::string(node->name.text),
       .kind = SymbolKind::Class,
       .node = node,
       .scope = this,
   };
+
   for (auto& field : node->fields) {
     field->symbol_ptr =
-        fields.append(Sema::get_instance().new_variable_symbol(field));
+        fields.append(Sema::get_instance()->new_variable_symbol(field));
   }
+
   for (auto& method : node->methods) {
     auto scope = new SCFunction(method, this);
-    symtable.append(&scope->symbol);
-    methods.append(&scope->symbol);
+    symtable.append(scope->symbol);
+    methods.append(scope->symbol);
   }
 }
+
+SCClass::~SCClass() {
+  for (auto field : fields.symbols)
+    delete field;
+}
+
 SCNamespace::SCNamespace(NdNamespace* node, Scope* parent)
     : Scope(ScopeKind::Namespace, node, parent) {
   node->scope_ptr = this;
-  symbol = {
+  symbol = new Symbol{
       .name = node->name,
       .kind = SymbolKind::Namespace,
       .node = node,
@@ -197,21 +249,24 @@ SCNamespace::SCNamespace(NdNamespace* node, Scope* parent)
   for (auto& item : node->items) {
     if (item->is(NodeKind::Let)) {
       auto let = item->as<NdLet>();
-      auto s = variables.append(Sema::get_instance().new_variable_symbol(let));
+      auto s = variables.append(Sema::get_instance()->new_variable_symbol(let));
       symtable.append(s);
       let->symbol_ptr = s;
       assert(let->symbol_ptr);
     } else {
       auto scope = Scope::from_node(item, this);
-      symtable.append(&scope->symbol);
-      get_table(item->kind)->append(&scope->symbol);
+      symtable.append(scope->symbol);
+      get_table(item->kind)->append(scope->symbol);
     }
   }
 }
+
+SCNamespace::~SCNamespace() {}
+
 SCModule::SCModule(NdModule* node, Scope* parent)
     : Scope(ScopeKind::Module, node, parent) {
   node->scope_ptr = this;
-  symbol = {
+  symbol = new Symbol{
       .name = node->name,
       .kind = SymbolKind::Module,
       .node = node,
@@ -220,15 +275,18 @@ SCModule::SCModule(NdModule* node, Scope* parent)
   for (auto& item : node->items) {
     if (item->is(NodeKind::Let)) {
       auto let = item->as<NdLet>();
-      auto s = variables.append(Sema::get_instance().new_variable_symbol(let));
+      auto s = variables.append(Sema::get_instance()->new_variable_symbol(let));
       symtable.append(s);
       let->symbol_ptr = s;
       assert(let->symbol_ptr);
     } else {
       auto scope = Scope::from_node(item, this);
-      symtable.append(&scope->symbol);
-      get_table(item->kind)->append(&scope->symbol);
+      symtable.append(scope->symbol);
+      get_table(item->kind)->append(scope->symbol);
     }
   }
 }
+
+SCModule::~SCModule() {}
+
 } // namespace fire

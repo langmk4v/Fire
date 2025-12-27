@@ -106,9 +106,6 @@ int Driver::main(int argc, char** argv) {
     }
   }
 
-  for (auto s : this->inputs)
-    delete s;
-
   this->inputs.clear();
 
   return 1;
